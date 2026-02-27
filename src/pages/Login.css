@@ -1,0 +1,136 @@
+:root {
+  --primary-color : #0b0e13;
+  --secondary-color:#272b35;
+  --accent-color: hsl(152 76% 42%);
+  --secondary-accent: #14c514;
+  --green-accent: hsl(152deg 76% 42% / 10%);
+  --text-color: #eaedf1;
+  --secondary-text-color: hsl(210 15% 75%);
+  --bg-color: hsl(220 25% 8%);
+  --card: hsl(220 22% 12%);
+}
+
+.container-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Tarjeta */
+.container-login .card {
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--card);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  margin-bottom: 150px;
+  flex-direction: column;
+}
+
+/* Cabecera de la tarjeta */
+.card-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.icon-circle {
+  width: 64px;
+  height: 64px;
+  background-color: var(--secondary-color); /* primary/10 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+}
+
+.icon-circle svg {
+  width: 32px;
+  height: 32px;
+  fill: var(--text-color); /* primary */
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--text-color);
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: var(--secondary-text-color); /* muted text */
+}
+
+/* Formulario */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+input {
+  padding: 10px;
+  border-radius: 8px;
+  background-color: var(--secondary-color);
+  border: 1px solid var(--accent-color);
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+input::placeholder {
+  color: var(--secondary-text-color);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+}
+
+#submitBtn {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  color: var(--text-color);
+  background-color: var(--accent-color);
+  font-weight: bold;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.registrarText {
+  margin-top: 15px;
+  text-align: center;
+}
+
+#registrarseBtn {
+  background-color: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: inherit;
+  cursor: pointer;
+}
+
+
+.response {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.response.error {
+  color: rgb(237 99 99);
+}
+
+.response.correcto {
+  color: rgb(102 255 102);
+}

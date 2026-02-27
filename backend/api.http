@@ -1,0 +1,8 @@
+### HACER LOGOUT, ELIMINAR EL REFRESH TOKEN DE LA BASE DE DATOS Y BORRAR LA COOKIE DEL CLIENTE
+POST http://localhost:3000/api/logout
+Content-Type: application/json
+
+### Recoger datos de sports
+POST http://localhost:3000/api/refresh
+Content-Type: application/json
+credentials: include
