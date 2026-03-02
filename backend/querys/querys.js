@@ -158,8 +158,8 @@ export class Querys {
         // console.log("Valid token id:",validToken.refresh_token_id )
         
         //eliminar el refresh token antiguo de la base de datos, ya que se va a generar uno nuevo      
-        const [deletOldTOken] = await connection.query("DELETE FROM refresh_tokens WHERE refresh_token_= ?",
-            [validToken.refresh_token]);
+        const [deletOldTOken] = await connection.query("DELETE FROM refresh_tokens WHERE refresh_token_id= ?",
+            [validToken.refresh_token_id]);
 
         console.log("Filas afectadas",deletOldTOken.affectedRows);
             

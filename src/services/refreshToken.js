@@ -13,6 +13,7 @@ export async function refreshToken () {
 
         if(response.status === 403) {
            console.log("Refresh token no válido o ha expirado, el usuario tiene que iniciar sesión de nuevo");
+           console.log(response)
             return false;
          }
 

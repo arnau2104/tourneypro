@@ -572,17 +572,53 @@ input:focus {
   max-height: 50px;
 }
 
+.container-blur {
+  z-index: 5;
+}
+
 .game-resullt-container {
-  max-width: 300px;
+  max-width: 500px;
   position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
   top: 50%;
   left: 50%;
+  z-index: 3;
+}
+
+.game-resullt-container form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;  
+}
+
+.game-resullt-container form .close {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  stroke: #fb5656;
+  cursor: pointer;
 }
 
 .game-resullt-container form > div {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 15px;
+}
+
+.game-resullt-container form input {
+  max-width: 100%;
+}
+
+.game-resullt-container form > div label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
 }
 
 /* TOURNAMET BRACKET CSS END */

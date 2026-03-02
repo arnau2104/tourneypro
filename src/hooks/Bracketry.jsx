@@ -1,9 +1,9 @@
 import React, {useEffect,useRef, useState} from 'react'
 import {createBracket} from 'bracketry';
+import {useSetGameResult} from './useSetGameResult';
 import { refreshToken } from '../services/refreshToken';
 import { Navigate } from 'react-router-dom';
-import { RiTeamLine } from 'react-icons/ri';
-
+import { X } from 'lucide-react';
 
 function Bracketry() {
 
@@ -13,6 +13,9 @@ function Bracketry() {
     const [tournamentData, setTournamentData] = useState({});
     const bracket  = useRef(null)
     const [resultForm,setResultForm] = useState('')
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+
+    // console.log(windowWidth);
 
       /* Entry Status : 
         1 => El participante está activo y esperando su primer match.
@@ -25,49 +28,55 @@ function Bracketry() {
     const mobileOptions = {
     navButtonsPosition: 'beforeTitles',
     visibleRoundsCount: 1,
-    leftNavButtonHTML: `< PREV ROUND`,
-    rightNavButtonHTML: `NEXT ROUND >`,
+    leftNavButtonHTML: `< RONDA ANTERIOR`,
+    rightNavButtonHTML: `SIGUIENTE RONDA >`,
     roundTitlesFontSize: 26,
     roundTitlesVerticalPadding: 4,
     matchFontSize: 14,
     matchHorMargin: 14,
     distanceBetweenScorePairs: 10,
-    getEntryStatusHTML: () => '',
+     getEntryStatusHTML: () => '',
     disableHighlight: true,
     verticalScrollMode: 'mixed',
     scrollButtonPadding:'0px'
-    // maxMatchWidth: 360
+    //  maxMatchWidth: 360
 };
 
 const options = {
      onMatchClick: match => {
-        // const name1 = data.contestants[match.sides[0].contestantId].players[0].title
-        // const name2 = data.contestants[match.sides[1].contestantId].players[0].title
-        // displayPopup(`...Some details of the match between ${name1} and ${name2}`)
         console.log("Match:", match);
-      setResultForm( 
-      <div className='game-resullt-container'>
-        <form>
-            <p>Introduzca el resultado del partido</p>
-
+        const bracketData = Object.values(bracket.current.getAllData()); // lo pasamos a array
+         console.log(bracketData);
+        let localTeamName = match.sides[0].contestantId in bracketData[2] ?  bracketData[2][match.sides[0].contestantId].players[0].title : null;
+        let guestTeamName = match.sides[1].contestantId in bracketData[2] ?  bracketData[2][match.sides[1].contestantId].players[0].title : null;
+        // console.log(localTeamName,guestTeamName );
+        if(localTeamName == null || guestTeamName == null) return;
+      setResultForm(             
+        <form onSubmit={(e)=> useSetGameResult({e,match, bracket, setResultForm})}>
+            <X className='close' onClick={()=> setResultForm('')} />
+            <p>INTRODUZCA EL RESULTADO DEL PARTIDO</p>
             <div>
-                <label > Leones del Norte
-                <input type="number" />
+                <label > {localTeamName}
+                <input name='localScore' type="number" />
                 </label>
-                <label > Dragones FC
-                <input type="number" />
+                <label > {guestTeamName}
+                <input name='guestScore' type="number" />
                 </label>
             </div>
             <button>Guardar</button>
         </form>
-       </div>
       )
-        // setGameResult(match,bracket)
     }
 }
 
     
+window.addEventListener('resize',()=>  {
+    setWindowWidth(window.innerWidth) 
+    if(window.innerWidth <= 700) {
+        bracket.current.app
+    }
 
+});
 
   useEffect(() => {
 
@@ -142,7 +151,7 @@ const options = {
         contestants: tournamentTeams
         }  
         
-       bracket.current = (createBracket(bracketData, bracketContainer.current,options)) // se puede añadir otro campo llamado options
+       bracket.current = (createBracket(bracketData, bracketContainer.current, (windowWidth <= 700 ? mobileOptions : options))) // se puede añadir otro campo llamado options
     
   },[tournamentData]) 
 
@@ -192,152 +201,6 @@ const options = {
         return matches;
 }
 
-function  test(match) {
-    console.log(games);
-}
-
-function setGameResult(match,bracket) {
-
-    const localScore = [1];
-    const guestScore = [3];
-
-
-    // console.log(match);
-    const allData = bracket.current.getAllData();
-     const nextRoundIndex = match.roundIndex + 1;
-    const nextOrder = Math.floor(match.order / 2);
-    const sideIndex = match.order % 2;
-    
-
-    function setScore (localScore,guestScore,match) {
-        let localTeamScore = [];
-        let guestTeamScore = [];
-        let guestGoals = 0;
-        let localGoals = 0;
-       if(localScore.length === 0 || guestScore.length === 0 || (localScore.length !== guestScore.length)) return null;
-
-       for(let i = 0; i < localScore.length; i++) {
-            if(localScore[i] > guestScore[i]) {
-                localTeamScore.push({
-                    mainScore : `${localScore[i]}`,
-                    isWinner: true
-                })
-
-                guestTeamScore.push({
-                    mainScore : `${guestScore[i]}`
-                })
-            }else if(guestScore[i] > localScore[i]) {
-                localTeamScore.push({
-                    mainScore : `${localScore[i]}`
-                })
-
-                guestTeamScore.push({
-                    mainScore : `${guestScore[i]}`,
-                    isWinner: true
-                })
-            }
-
-            localGoals = localGoals + localScore[i];
-            guestGoals = guestGoals + guestScore[i];
-       }
-
-       let winnerId = localGoals > guestGoals ? match.sides[0].contestantId : match.sides[1].contestantId;
-
-       return {localTeamScore, guestTeamScore, winnerId}
-    }
-
-    // console.log(setScore());
-    
-    const {localTeamScore, guestTeamScore, winnerId} = setScore (localScore,guestScore,match);
-
-    console.log(localTeamScore, guestTeamScore, winnerId);
-    // console.log(allData);
-
-    // console.log("Next round", allData.rounds[match.roundIndex + 1]);
-
-    const nextMatch = allData.matches.find( m => m.roundIndex == nextRoundIndex && m.order === nextOrder);
-    let nextGameData = {};
-
-    // console.log(nextMatch);
-
-    if(nextMatch) {
-        console.log("dins if");
-        const localTeam = nextMatch.sides[0].contestantId ?? '';
-    const guestTeam = nextMatch.sides[1].contestantId ?? '';
-    
-        if(!localTeam) {
-            nextGameData = {
-                local : {contestantId: match.sides[0].contestantId,scores: []}, // el ganador
-                guest : {contestantId: guestTeam,scores: []}
-            }
-        }else if(!guestTeam) {
-            nextGameData = {
-                local : {contestantId: localTeam,scores: []}, // el ganador
-                guest : {contestantId: match.sides[0].contestantId,scores: []}
-            }    
-        }
-
-        console.log(nextGameData.local);
-        console.log(nextGameData.guest);
-    }
-
-    
-
-    
-   
-
-    bracket.current.applyMatchesUpdates([
-        {
-            roundIndex : match.roundIndex,
-            order: match.order,
-            sides: [
-                {
-                    contestantId: match.sides[0].contestantId,
-                    scores: [
-                        localTeamScore[0]
-                    ],
-
-                   isWinner: winnerId === match.sides[0].contestantId
-
-                    
-                },
-                {
-                    contestantId: match.sides[1].contestantId,
-                    scores: [
-                        guestTeamScore[0]
-
-                    ],
-
-                    isWinner: winnerId === match.sides[1].contestantId
-                }
-            ]
-
-        },
-        {
-            roundIndex: nextRoundIndex,
-            order: nextOrder,
-            sides: Object.keys(nextGameData).length > 0 ? [
-                    nextGameData.local,
-                    nextGameData.guest
-                ]    
-                : sideIndex === 0 ? 
-                [
-                    {contestantId: winnerId,scores: []}, // el ganador
-                    {contestantId:'',scores: []}
-                ]:  
-                    [ 
-                    {contestantId: '',scores: []}, 
-                    {contestantId:winnerId,scores: []}// el ganador
-                ]
-               
-        }
-        
-
-    ])
-
-}
-
-
 
   
     return (
@@ -346,7 +209,7 @@ function setGameResult(match,bracket) {
             <div ref={bracketContainer} id='container'>
                
             </div>
-            <div>
+            <div className='game-resullt-container'>
                  {resultForm}
             </div>
         </div>  
