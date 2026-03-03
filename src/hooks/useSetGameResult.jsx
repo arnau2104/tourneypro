@@ -1,13 +1,26 @@
 import React, { useEffect } from 'react'
 
-export function useSetGameResult({e,match,bracket,setResultForm}) {
+export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm}) {
     
     e.preventDefault()
 
+    // console.log("Games score", gamesScore);
+    const scores = gamesScore.filter(s => s.roundIndex == match.roundIndex && s.order == match.order)
+    // console.log("score filtred", scores);
+
     const form = e.target;
 
-    const localScore = [form.localScore.value];
-    const guestScore = [form.guestScore.value];
+    let localScore = [];
+    let guestScore = [];
+
+    if(scores.length > 0) {
+        for(let i = 0; i < scores.length; i++) {
+            localScore.push(scores[i].localScore);
+            guestScore.push(scores[i].guestScore)
+        }
+    }
+    // console.log("local", localScore);
+    // console.log("gueust",guestScore);
 
 
     // console.log(match);
@@ -28,25 +41,25 @@ export function useSetGameResult({e,match,bracket,setResultForm}) {
             if(localScore[i] > guestScore[i]) {
                 localTeamScore.push({
                     mainScore : `${localScore[i]}`,
-                    isWinner: true
-                })
-
-                guestTeamScore.push({
-                    mainScore : `${guestScore[i]}`
-                })
-            }else if(guestScore[i] > localScore[i]) {
-                localTeamScore.push({
-                    mainScore : `${localScore[i]}`
-                })
+                    isWinner: true,
+                },)
 
                 guestTeamScore.push({
                     mainScore : `${guestScore[i]}`,
-                    isWinner: true
-                })
+                },)
+            }else if(guestScore[i] > localScore[i]) {
+                localTeamScore.push({
+                    mainScore : `${localScore[i]}`,
+                },)
+
+                guestTeamScore.push({
+                    mainScore : `${guestScore[i]}`,
+                    isWinner: true,
+                },)
             }
 
-            localGoals = localGoals + localScore[i];
-            guestGoals = guestGoals + guestScore[i];
+            localGoals += Number(localScore[i]);
+            guestGoals += Number(guestScore[i]);
        }
 
        let winnerId = localGoals > guestGoals ? match.sides[0].contestantId : match.sides[1].contestantId;
@@ -69,32 +82,30 @@ export function useSetGameResult({e,match,bracket,setResultForm}) {
     // console.log(nextMatch);
 
     if(nextMatch) {
-        console.log("dins if");
         const localTeam = nextMatch.sides[0].contestantId ?? '';
-    const guestTeam = nextMatch.sides[1].contestantId ?? '';
+        const guestTeam = nextMatch.sides[1].contestantId ?? '';
+
+
+        // Siempre definimos el sideIndex: 0 = local, 1 = guest
+        nextGameData = {
+            local: { ...nextMatch.sides[0] },
+            guest: { ...nextMatch.sides[1] }
+        };
     
-        if(!localTeam) {
-            nextGameData = {
-                local : {contestantId: winnerId,scores: []}, // el ganador
-                guest : {contestantId: guestTeam,scores: []}
-            }
-        }else if(!guestTeam) {
-            nextGameData = {
-                local : {contestantId: localTeam,scores: []}, // el ganador
-                guest : {contestantId: winnerId,scores: []}
-            }    
-        }else if( guestTeam && localTeam) {
-            nextGameData =sideIndex === 0 ? {
-                local : {contestantId: winnerId,scores: []}, // el ganador
-                guest : {contestantId: guestTeam,scores: []}
-            } : {
-                local : {contestantId: localTeam,scores: []}, // el ganador
-                guest : {contestantId: winnerId,scores: []}
-            }
+        if (sideIndex === 0) {
+        // El ganador va al side "local"
+        nextGameData.local.contestantId = winnerId;
+        } else {
+            // El ganador va al side "guest"
+            nextGameData.guest.contestantId = winnerId;
         }
 
-        // console.log(nextGameData.local);
-        // console.log(nextGameData.guest);
+        // Inicializamos scores si quieres
+        nextGameData.local.scores = nextGameData.local.scores || [];
+        nextGameData.guest.scores = nextGameData.guest.scores || [];
+
+            // console.log(nextGameData.local);
+            // console.log(nextGameData.guest);
     }
 
     
@@ -109,9 +120,7 @@ export function useSetGameResult({e,match,bracket,setResultForm}) {
             sides: [
                 {
                     contestantId: match.sides[0].contestantId,
-                    scores: [
-                        localTeamScore[0]
-                    ],
+                    scores: localTeamScore,
 
                    isWinner: winnerId === match.sides[0].contestantId
 
@@ -119,10 +128,7 @@ export function useSetGameResult({e,match,bracket,setResultForm}) {
                 },
                 {
                     contestantId: match.sides[1].contestantId,
-                    scores: [
-                        guestTeamScore[0]
-
-                    ],
+                    scores: guestTeamScore,
 
                     isWinner: winnerId === match.sides[1].contestantId
                 }
@@ -151,7 +157,13 @@ export function useSetGameResult({e,match,bracket,setResultForm}) {
 
     ])
 
-    setResultForm(' ')
+    const updatedData = bracket.current.getAllData();
+   const matchResult =  updatedData.matches.find( m => m.roundIndex == match.roundIndex && m.order === match.order)
+
+   console.log("Updated data:", updatedData);
+    console.log("Resultado del patido:", matchResult);
+
+    setOpenForm(false)
 
 } 
 

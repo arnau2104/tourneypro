@@ -1,9 +1,10 @@
 import React, {useEffect,useRef, useState} from 'react'
 import {createBracket} from 'bracketry';
 import {useSetGameResult} from './useSetGameResult';
+import ScoreForm from './ScoreForm'
 import { refreshToken } from '../services/refreshToken';
 import { Navigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X,Plus } from 'lucide-react';
 
 function Bracketry() {
 
@@ -14,6 +15,13 @@ function Bracketry() {
     const bracket  = useRef(null)
     const [resultForm,setResultForm] = useState('')
     const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+    const [selectedMatch, setSelectedMatch] = useState(null);
+    const [localTeam, setLocalTeam] = useState('');
+    const [guestTeam, setGuestTeam] = useState('')
+    const [openForm, setOpenForm] = useState(false);
+    const [gamesScore, setGamesScore] = useState([ 
+    { roundIndex : 0, order : 0, localScore: "", guestScore: "" }
+  ]);
 
     // console.log(windowWidth);
 
@@ -28,53 +36,53 @@ function Bracketry() {
     const mobileOptions = {
     navButtonsPosition: 'beforeTitles',
     visibleRoundsCount: 1,
-    leftNavButtonHTML: `< RONDA ANTERIOR`,
-    rightNavButtonHTML: `SIGUIENTE RONDA >`,
+    leftNavButtonHTML: `<div style="padding: 10px;"> <= RONDA ANTERIOR </div>`,
+    rightNavButtonHTML: `<div style="padding: 10px;"> SIGUIENTE RONDA => </div>`,
     roundTitlesFontSize: 26,
-    roundTitlesVerticalPadding: 4,
+    roundTitlesVerticalPadding: 10,
     matchFontSize: 14,
     matchHorMargin: 14,
     distanceBetweenScorePairs: 10,
      getEntryStatusHTML: () => '',
     disableHighlight: true,
     verticalScrollMode: 'mixed',
-    scrollButtonPadding:'0px'
+    scrollButtonPadding:'0px', 
+    highlightedConnectionLinesColor: 'hsl(152 76% 42%)',
+    highlightedPlayerTitleColor: 'hsl(152 76% 42%)',
+    onMatchClick: match => onMatchClickFunc(match)
     //  maxMatchWidth: 360
 };
 
-const options = {
-     onMatchClick: match => {
-        console.log("Match:", match);
+function onMatchClickFunc(match) {
+    //  console.log("Match:", match);
         const bracketData = Object.values(bracket.current.getAllData()); // lo pasamos a array
-         console.log(bracketData);
-        let localTeamName = match.sides[0].contestantId in bracketData[2] ?  bracketData[2][match.sides[0].contestantId].players[0].title : null;
-        let guestTeamName = match.sides[1].contestantId in bracketData[2] ?  bracketData[2][match.sides[1].contestantId].players[0].title : null;
+        //  console.log(bracketData);
+        setLocalTeam(match.sides[0].contestantId in bracketData[2] ?  bracketData[2][match.sides[0].contestantId] : null);
+        setGuestTeam(match.sides[1].contestantId in bracketData[2] ?  bracketData[2][match.sides[1].contestantId] : null);
         // console.log(localTeamName,guestTeamName );
-        if(localTeamName == null || guestTeamName == null) return;
-      setResultForm(             
-        <form onSubmit={(e)=> useSetGameResult({e,match, bracket, setResultForm})}>
-            <X className='close' onClick={()=> setResultForm('')} />
-            <p>INTRODUZCA EL RESULTADO DEL PARTIDO</p>
-            <div>
-                <label > {localTeamName}
-                <input name='localScore' type="number" />
-                </label>
-                <label > {guestTeamName}
-                <input name='guestScore' type="number" />
-                </label>
-            </div>
-            <button>Guardar</button>
-        </form>
-      )
-    }
+        if(localTeam == null || guestTeam == null) return;
+        // console.log(bracketData[2][match.sides[0].contestantId]);
+        setSelectedMatch(match);
+        setOpenForm(true);
+
+}
+
+const options = {
+     onMatchClick: match => onMatchClickFunc(match),
+     highlightedConnectionLinesColor: 'hsl(152 76% 42%)',
+    highlightedPlayerTitleColor: 'hsl(152 76% 42%)',
+    disableHighlight: false,
+    visibleRoundsCount: 0,
+    width: 'calc(100vw - 100px)'
+   
 }
 
     
 window.addEventListener('resize',()=>  {
     setWindowWidth(window.innerWidth) 
-    if(window.innerWidth <= 700) {
-        bracket.current.app
-    }
+    // if(window.innerWidth <= 700) {
+    //     bracket.current.app
+    // }
 
 });
 
@@ -151,7 +159,7 @@ window.addEventListener('resize',()=>  {
         contestants: tournamentTeams
         }  
         
-       bracket.current = (createBracket(bracketData, bracketContainer.current, (windowWidth <= 700 ? mobileOptions : options))) // se puede añadir otro campo llamado options
+       bracket.current = createBracket(bracketData, bracketContainer.current, (windowWidth <= 700 ? mobileOptions : options)) // se puede añadir otro campo llamado options
     
   },[tournamentData]) 
 
@@ -204,13 +212,30 @@ window.addEventListener('resize',()=>  {
 
   
     return (
-         <div>
-            <h2>Torneo - Eliminación Directa</h2>
+         <div className='bracket-container'>
+            <h2>Copa Invierno 2026</h2>
             <div ref={bracketContainer} id='container'>
                
             </div>
             <div className='game-resullt-container'>
-                 {resultForm}
+                {selectedMatch && openForm && (
+                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket,gamesScore,setOpenForm})}>
+                        <X className='close' onClick={()=> setOpenForm(false)} />
+                        <p>Introduzca el resultado de la eliminatoria</p>
+
+                        <div className='games-container'>
+                        <ScoreForm
+                            localTeam={localTeam}
+                            guestTeam={guestTeam}
+                            gamesScore={gamesScore}
+                            setGamesScore={setGamesScore}
+                            match={selectedMatch}
+                        />
+                        </div>
+
+                        <button>Guardar</button>
+                    </form>
+                )}
             </div>
         </div>  
     )

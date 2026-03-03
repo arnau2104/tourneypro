@@ -565,6 +565,24 @@ input:focus {
 
 /* TOURNAMET BRACKET CSS START */
 
+.bracket-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  padding: 25px 0px;
+  width: 100%;
+  height: 100%;
+}
+
+.bracket-container > h2 {
+  font-size: 30px;
+  color: var(--accent-color);
+  align-self: center;
+      text-align: center;
+    margin: 20px 0px;
+}
+
 .team-shield {
   width: 100%;
   height: auto;
@@ -578,6 +596,7 @@ input:focus {
 
 .game-resullt-container {
   max-width: 500px;
+  width: 90%;
   position: fixed;
   display: flex;
   flex-direction: column;
@@ -585,6 +604,7 @@ input:focus {
   gap: 15px;
   top: 50%;
   left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 3;
 }
 
@@ -592,7 +612,14 @@ input:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;  
+  justify-content: center;
+  position: relative; 
+  padding: 50px; 
+}
+
+.game-resullt-container form > p {
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .game-resullt-container form .close {
@@ -603,15 +630,28 @@ input:focus {
   cursor: pointer;
 }
 
-.game-resullt-container form > div {
+.games-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.score-div {
   display: flex;
   flex-direction: row;
+  align-items: center;
   flex-wrap: wrap;
   gap: 15px;
 }
 
+.score-div .add-game {
+  margin-top: 20px;
+  cursor: pointer;
+}
+
 .game-resullt-container form input {
-  max-width: 100%;
+  width:100%;
+  max-width: 150px;
 }
 
 .game-resullt-container form > div label {
@@ -619,6 +659,27 @@ input:focus {
   flex-direction: column;
   align-items: center;
   gap: 5px;
+}
+
+@media (max-width: 700px) {
+  .bracket-container {
+    display: block;
+    padding: 0;
+  }
+}
+
+@media (max-width: 462px) {
+  .score-div {
+    flex-direction: column;  
+  } 
+
+    .game-resullt-container form input {
+    max-width: 200px;
+  }
+
+  .game-resullt-container form > p {
+    font-size: 15px;
+  }
 }
 
 /* TOURNAMET BRACKET CSS END */
