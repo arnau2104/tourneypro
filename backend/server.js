@@ -54,6 +54,7 @@ app.get('/api', (req,res) => {
  app.get('/api/tournamentPageData', authMiddleware, Querys.tournamentPageData);
  app.post('/api/createTournament', authMiddleware, Querys.createTournament);
  app.get('/api/tournamentData', authMiddleware, Querys.tournamentData);
+ app.post('/api/updateGameData', authMiddleware, Querys.updateGameData);
 
 app.listen(port, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${port}`);

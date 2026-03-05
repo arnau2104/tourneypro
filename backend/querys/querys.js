@@ -2,6 +2,7 @@ import { connection } from '../db_connection.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: 'backend/.env' });
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { validateUserData, validatePartialUserData, validateTournamentData, validatePartialTournamentData } from '../schemas.js';
 export class Querys {
@@ -141,11 +142,15 @@ export class Querys {
 
             let validToken = null; //para comparar con bcrypt
 
+            const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
           for (const token of userTokens) {
 
-            const match = await bcrypt.compare(refreshToken, token.refresh_token); //comparar el refresh token recibido con el refresh token encriptado de la base de datos
-
+            const match = await bcrypt.compare(tokenHash, token.refresh_token); //comparar el refresh token recibido con el refresh token encriptado de la base de datos
+              console.log("Comparando con:", token.refresh_token_id);
+            console.log("Match:", match);
+    
             if(match)  {
+                console.log("TOKEN ENCONTRADO");
                 validToken = token; 
                 break;
             }
@@ -277,6 +282,51 @@ export class Querys {
             console.log("Error al obtener los datos", error.message);
         }
     }
+
+    static async updateGameData(req,res) {
+        try {
+
+            const {tournamentId,match,localScore,guestScore,nextMatch} = req.body;
+            const sport_id = 1;
+            
+            if(!tournamentId || !match || !nextMatch || !localScore || !guestScore) return res.status(400).json({ error: "Los datos del partido no son válidos" });
+
+            const nextGameLocalTeamId = nextMatch.sides[0].contestantId ?  nextMatch.sides[0].contestantId : null ;
+            const nextGameGuestTeamId = nextMatch.sides[1].contestantId ?  nextMatch.sides[1].contestantId : null ;
+
+
+            const [updateGameResult] = await connection.query( "UPDATE games SET local_team_score = ?, guest_team_score = ?, game_status = 'finalizado' WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
+            [JSON.stringify(localScore),JSON.stringify(guestScore),tournamentId,match.roundIndex,match.order]);
+
+            if(updateGameResult.affectedRows === 0) return res.status(400).send({ error: 'No se ha podido actualizar el partido, intentelo de nuevo' });
+
+            const [nextGameExist] = await connection.query( "SELECT * FROM games WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
+            [tournamentId, nextMatch.roundIndex, nextMatch.order]);
+
+            let nextGameResult; // variable fuera del bloque
+
+            if(nextGameExist.length === 0) {
+                const [insertNextGame] = await connection.query( "INSERT INTO games (sport_id,tournament_id, round_index, game_order, local_team_id, guest_team_id ) VALUES (?,?, ?, ?, ?, ? )", 
+                [sport_id,tournamentId, nextMatch.roundIndex, nextMatch.order, nextGameLocalTeamId,nextGameGuestTeamId]);
+
+                  nextGameResult = insertNextGame;
+
+            }else if(nextGameExist.length === 1) {
+                const [updateNextGame] = await connection.query( "UPDATE games SET local_team_id = ?, guest_team_id = ? WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
+                [nextGameLocalTeamId, nextGameGuestTeamId, tournamentId, nextMatch.roundIndex, nextMatch.order]);
+
+                  nextGameResult = updateNextGame;
+            }
+
+            if(nextGameResult.affectedRows === 0) return res.status(500).send({error: 'No se ha podido actualizar el siguiente partido, intentelo de nuevo',data: {updateGameResult, insertNextGame}} )
+
+            res.send({ message: 'Partido actualizado correctamente' });
+
+        }catch(error) {
+            // res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            res.status(500).send({ error: error.message });
+        }
+    }
     
 
 
@@ -295,7 +345,9 @@ async function generateAccessToken(id) {
        const refreshToken = jwt.sign({ user_id: id}, process.env.SECRET_JWT_KEY, { expiresIn: '7d' });
 
     //    console.log("Token", token);
-        const refreshTokenEncrypted = await bcrypt.hash(refreshToken, 10);
+        // ✅ Hashea el SHA-256 del token (siempre 64 chars, dentro del límite de bcrypt)
+        const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+        const refreshTokenEncrypted = await bcrypt.hash(tokenHash, 10);
 
         const [insertRefreshToken] = await connection.query( "INSERT INTO refresh_tokens (user_id, refresh_token, expiry_date) VALUES (?, ?, ?)",
             [id, refreshTokenEncrypted,new Date(Date.now() + 7*24*60*60*1000)]

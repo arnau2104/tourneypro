@@ -3,11 +3,12 @@ import {createBracket} from 'bracketry';
 import {useSetGameResult} from './useSetGameResult';
 import ScoreForm from './ScoreForm'
 import { refreshToken } from '../services/refreshToken';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { X,Plus } from 'lucide-react';
 
 function Bracketry() {
 
+        const navigate = useNavigate();
     const bracketContainer = useRef(null);
     const games = useRef([])
     const teams = useRef([])
@@ -98,7 +99,7 @@ window.addEventListener('resize',()=>  {
 
             if(!refreshOk) {
                 console.log("No se ha podido refrescar el token");
-                Navigate('/login');
+                navigate('/login');
                 return
             }
 
@@ -168,36 +169,47 @@ window.addEventListener('resize',()=>  {
   function generateGames(data) {
     if(data.length === 0) return;
     const matches = [];
+    
 
     // Generamos los partidos de la primera ronda
     data.forEach((game,index) => {
-      matches.push({
-        roundIndex: 0,
-        order: index,
-        sides: [
-          {contestantId: `${game.local_team_id}` ,scores: [] },
-          {contestantId: `${game.guest_team_id}`,scores: []}             
-        ]
-      })
+        if(game.round_index == 0) {
+            const localScore = game.local_team_score ? JSON.parse(game.local_team_score) : [];
+            const guestScore = game.guest_team_score ? JSON.parse(game.guest_team_score) : [];
+            matches.push({
+                roundIndex: 0,
+                order: index,
+                sides: [
+                {contestantId: `${game.local_team_id}` ,scores: localScore  },
+                {contestantId: `${game.guest_team_id}`,scores: guestScore }             
+                ]
+            })
+    }
     });
 
     let round = 1;
-    let previousRoundGames = games.length;
+    let previousRoundGames = matches.length;
 
     // Creamos automáticamente las rondas rondas siguientes
     while(previousRoundGames > 1) {
-
+        const nextRoundGames = data.filter(g => g.round_index == round);
+        console.log("Next round games",nextRoundGames);
+        // console.log("rounnd index", nextRoundGames[0].round_index);
         // Calculamos cuántos partidos tendrá la siguiente ronda.
-        const currentRoundGames = previousRoundGames / 2;
+        const currentRoundGames = Math.ceil(previousRoundGames / 2);
 
          // Creamos los partidos vacíos de esta nueva ronda
          for (let i = 0; i < currentRoundGames; i++) {
+            const localId = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].local_team_id ? nextRoundGames[i].local_team_id?.toString() : ''; 
+            const guestId = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].guest_team_id ? nextRoundGames[i].guest_team_id?.toString() : ''; 
+            const localScore = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].local_team_score ? JSON.parse(nextRoundGames[i].local_team_score) : [];
+            const guestScore = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].guest_team_score ? JSON.parse(nextRoundGames[i].guest_team_score) : [];
             matches.push({
                 roundIndex: round,
                 order: i,
                 sides: [
-                    {contestantId: '', scores: [] },
-                    {contestantId: '', scores: [] }
+                    {contestantId: localId, scores: localScore },
+                    {contestantId: guestId, scores: guestScore }
                 ]
             })
         }
@@ -219,7 +231,7 @@ window.addEventListener('resize',()=>  {
             </div>
             <div className='game-resullt-container'>
                 {selectedMatch && openForm && (
-                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket,gamesScore,setOpenForm})}>
+                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket, gamesScore, setOpenForm, localTeam, guestTeam,tournamentId: 26,navigate})}>
                         <X className='close' onClick={()=> setOpenForm(false)} />
                         <p>Introduzca el resultado de la eliminatoria</p>
 
