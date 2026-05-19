@@ -5,6 +5,8 @@ import  Layout  from './components/Layout'
 import Login from './pages/Login'
 import Tournaments from './pages/Tournaments'
 import Tournament from './pages/Tournament'
+import Games from './pages/Games'
+import Teams from './pages/Teams'
 
 
 
@@ -18,6 +20,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/torneos" element={<Tournaments />} />
           <Route path='/torneo' element={<Tournament />} />
+          <Route path='/partidos' element={<Games />} />
+          <Route path='/equipos' element={<Teams />} />
         </Route>
       </Routes>
     </BrowserRouter>

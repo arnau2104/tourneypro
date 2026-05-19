@@ -1,7 +1,7 @@
-import {React, useState} from 'react'
+import React,{useState,useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AuthContext } from '../context/userContext';
 import "./login.css"
-import { set } from 'zod';
 
 function Login() {
 
@@ -14,11 +14,15 @@ const [password, setPassword] = useState("");
 const [responseText, setResponseText] = useState(["", 'error'])
 const navigate = useNavigate();
 
+  const { user, setUser } = useContext(AuthContext);
+
+
 
   async function handelSubmit (e) {
     e.preventDefault();
+    console.log("submut");
 
-    if(submitAction == 'login') {
+    if(submitAction === 'login') {
 
         fetch(`/api/login`, {
             method: 'POST',
@@ -29,6 +33,8 @@ const navigate = useNavigate();
             credentials: 'include' // para enviar las cookies al backend
         }).then(res => res.json())
         .then(data => {
+
+          console.log("Data", data);
             
             if(data.error) {
                 setResponseText([data.error, 'error']);
@@ -36,6 +42,12 @@ const navigate = useNavigate();
             } 
             
             setResponseText([data.message, 'correcto']);
+            if(data.user) {
+              console.log("data user", data.user);
+             setUser(data.user);
+            }else {
+              console.log("no data user");
+            }
 
             setTimeout(()=> {
               setEmail('');
@@ -45,10 +57,11 @@ const navigate = useNavigate();
           })  
         
           .catch(error => {
+            console.log("Error", error.message);
             setResponseText(["Error al iniciar sesión", 'error']);
         });
 
-  } else if(submitAction == 'registrarse') {
+  } else if(submitAction === 'registrarse') {
 
     fetch('api/register', {
       method: 'POST',
@@ -111,7 +124,7 @@ const navigate = useNavigate();
           </div> */}
         </div>
 
-        <form onSubmit={handelSubmit}>
+        <form onSubmit={(e)=>handelSubmit(e)}>
            {submitAction == 'registrarse' && ( 
             <> 
               <input type="text" placeholder="Ingrese su nombre" id="name" value={name} onChange={(e)=> setName(e.target.value)} required />

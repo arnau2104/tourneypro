@@ -1,5 +1,4 @@
 import express from 'express';
-import { connection } from './db_connection.js';
 import { Querys } from './querys/querys.js';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
@@ -32,8 +31,9 @@ const authMiddleware = (req, res, next) => { //middleware para comprovar que hay
     next(); //continuar con la siguiente función middleware o ruta
 
   }catch (error) {  
+     console.log("Error", error.message);
     return res.status(401).json({ error: "no se ha podido iniciar session" });
-    console.log("Error", error.message);
+   
   }
 
 };
@@ -44,17 +44,23 @@ app.get('/api', (req,res) => {
 })
 
 
-  //RUTAS PUBLICAS
+ //RUTAS PUBLICAS
  app.post('/api/login', Querys.login);
  app.post('/api/register', Querys.register);
  app.post('/api/refresh', Querys.refreshToken);
  app.post('/api/logout', Querys.logout);
 
  //RUTAS PROTEGIDAS
+app.get('/api/me',authMiddleware, Querys.me);
  app.get('/api/tournamentPageData', authMiddleware, Querys.tournamentPageData);
  app.post('/api/createTournament', authMiddleware, Querys.createTournament);
+ app.post('/api/updateTournament', authMiddleware, Querys.updateTournament);
+ app.post('/api/tournamentInscription', authMiddleware, Querys.tournamentInscription);
  app.get('/api/tournamentData', authMiddleware, Querys.tournamentData);
  app.post('/api/updateGameData', authMiddleware, Querys.updateGameData);
+ app.post('/api/selectTournament', authMiddleware, Querys.selectTournament);
+ app.post('/api/getTeams', authMiddleware, Querys.getTeams);
+ app.get('/api/getGames',authMiddleware, Querys.getGames);
 
 app.listen(port, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${port}`);

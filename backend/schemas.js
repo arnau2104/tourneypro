@@ -9,6 +9,7 @@ const userSchema = z.object( {
 });
 
 const tournamentSchema = z.object({
+    tournamentId: z.number('El id del torneo no es válido').optional(),
     tournamentName: z.string('El nombre del torneo no es válido'),
     sport: z.number('El deporte no es válido'),
     organizer: z.string('El organizador no es válido'),
@@ -16,10 +17,13 @@ const tournamentSchema = z.object({
     endDate: z.coerce.date('La fecha de fin no es válida'),
     location: z.string('La ubicación no es válida'),
     totalTeams: z.number('El número de equipos no es válido'),
+    roundsNames: z.array(z.string('El nombre de la ronda no es válido')),
     tournamentType: z.enum(['playoffs', 'league', 'playoffs,league'], 'El tipo de torneo no es válido'),
     prize: z.string('El premio no es válido').optional(),
     inscriptionPrice: z.number('El precio de inscripción no es válido').optional(),
-    requirements: z.string('Los requisitos no son válidos').optional()
+    requirements: z.string('Los requisitos no son válidos').optional(),
+    tournamentStatus: z.enum(['próximamente', 'iniciado', 'cerrado', 'en curso', 'finalizado'], 'El estado del torneo no es válido'),
+    isActive: z.number('El estado del torneo no es válido').min(0).max(1).optional()
 
 });
 

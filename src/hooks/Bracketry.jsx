@@ -8,7 +8,7 @@ import { X,Plus } from 'lucide-react';
 
 function Bracketry() {
 
-        const navigate = useNavigate();
+    const navigate = useNavigate();
     const bracketContainer = useRef(null);
     const games = useRef([])
     const teams = useRef([])
@@ -118,7 +118,7 @@ window.addEventListener('resize',()=>  {
 
         if(data.games.length == 0) return console.log("No data");
 
-       setTournamentData({games : data.games, teams: data.tournamentData});
+       setTournamentData({games : data.games, teams: data.tournamentData, rounds_names: data.tournamentData[0].rounds_names});
 
     }).catch(error => {
         console.log("Error", error.message);
@@ -146,16 +146,13 @@ window.addEventListener('resize',()=>  {
         teams.current = tournamentTeams;
        }
 
-    
+    // console.log("Rounds names",tournamentData.rounds_names);
         const brakcetGames = generateGames(tournamentData.games)
+        const roundsNamesArray = convertRoundsNames(tournamentData.rounds_names);
+         
         
         const bracketData = {
-        rounds: [
-                {name: "Ocatvos de final"},
-                {name: "Quartos de Final"},
-                {name: "Semi final"},
-                {name: "Final"}     
-        ],
+        rounds: roundsNamesArray,
         matches: brakcetGames ,
         contestants: tournamentTeams
         }  
@@ -178,7 +175,7 @@ window.addEventListener('resize',()=>  {
             const guestScore = game.guest_team_score ? JSON.parse(game.guest_team_score) : [];
             matches.push({
                 roundIndex: 0,
-                order: index,
+                order: game.game_order,
                 sides: [
                 {contestantId: `${game.local_team_id}` ,scores: localScore  },
                 {contestantId: `${game.guest_team_id}`,scores: guestScore }             
@@ -193,17 +190,18 @@ window.addEventListener('resize',()=>  {
     // Creamos automáticamente las rondas rondas siguientes
     while(previousRoundGames > 1) {
         const nextRoundGames = data.filter(g => g.round_index == round);
-        console.log("Next round games",nextRoundGames);
+        // console.log("Next round games",nextRoundGames);
         // console.log("rounnd index", nextRoundGames[0].round_index);
         // Calculamos cuántos partidos tendrá la siguiente ronda.
         const currentRoundGames = Math.ceil(previousRoundGames / 2);
 
          // Creamos los partidos vacíos de esta nueva ronda
          for (let i = 0; i < currentRoundGames; i++) {
-            const localId = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].local_team_id ? nextRoundGames[i].local_team_id?.toString() : ''; 
-            const guestId = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].guest_team_id ? nextRoundGames[i].guest_team_id?.toString() : ''; 
-            const localScore = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].local_team_score ? JSON.parse(nextRoundGames[i].local_team_score) : [];
-            const guestScore = nextRoundGames[i] && nextRoundGames[i].round_index == round && nextRoundGames[i].game_order == i && nextRoundGames[i].guest_team_score ? JSON.parse(nextRoundGames[i].guest_team_score) : [];
+            const game = nextRoundGames.find(g => g.game_order === i);
+            const localId = game && game.local_team_id ? game.local_team_id?.toString() : ''; 
+            const guestId = game && game.guest_team_id ? game.guest_team_id?.toString() : ''; 
+            const localScore = game && game.local_team_score ? JSON.parse(game.local_team_score) : [];
+            const guestScore = game && game.guest_team_score ? JSON.parse(game.guest_team_score) : [];
             matches.push({
                 roundIndex: round,
                 order: i,
@@ -221,17 +219,29 @@ window.addEventListener('resize',()=>  {
         return matches;
 }
 
+function convertRoundsNames(data) {   
+    const rounds = JSON.parse(data);
+    let roundsNames = [];
+    rounds.map(round => {
+        roundsNames.push({name:round});
+    })
+
+    return roundsNames
+
+}
+
 
   
     return (
          <div className='bracket-container'>
             <h2>Copa Invierno 2026</h2>
+            {/* <button onClick={Confetti}>Confetti</button> */}
             <div ref={bracketContainer} id='container'>
                
             </div>
             <div className='game-resullt-container'>
                 {selectedMatch && openForm && (
-                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket, gamesScore, setOpenForm, localTeam, guestTeam,tournamentId: 26,navigate})}>
+                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket, gamesScore, setOpenForm, localTeam, guestTeam,tournamentId: 26,navigate, rounds: tournamentData.rounds_names})}>
                         <X className='close' onClick={()=> setOpenForm(false)} />
                         <p>Introduzca el resultado de la eliminatoria</p>
 

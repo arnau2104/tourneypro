@@ -7,6 +7,34 @@ import jwt from 'jsonwebtoken';
 import { validateUserData, validatePartialUserData, validateTournamentData, validatePartialTournamentData } from '../schemas.js';
 export class Querys {
 
+    static async me(req, res) {
+        const token = req.cookies.access_token;
+        if (!token) return res.status(500).send({ message: "No session" });
+        // console.log("req user", req.user_id);
+
+        try {
+            const decoded = jwt.verify(token, process.env.SECRET_JWT_KEY);
+            const [user] = await connection.query("SELECT user_id,name,lastname, email, birthdate FROM users WHERE user_id = ?", [req.user_id]);
+
+            // console.log("user", user);
+
+            if (user.length === 0) return res.status(401).send({ message: "Invalid token" });
+
+            const userResponse = {
+        user_id: user[0].user_id,
+        name: user[0].name,
+        lastname: user[0].lastname,
+        email: user[0].email,
+        birthdate: user[0].birthdate
+        };
+
+            res.send({ user: userResponse });
+        } catch(error) {
+            console.log("Error en me", error.message);
+            res.status(401).json({ message: "Invalid token" });
+        }
+    }
+
     static async login(req, res) {  
     
     try {
@@ -20,8 +48,9 @@ export class Querys {
    
        // Si no existe el usuario
        if (result.length === 0 || !result) {
+        console.log("error en el resullt", result);
            return res.status(401).json({ error: 'Contraseña o email incorrectos' });
-           console.log("error en el resullt", result);
+           
        }
 
        // Verificar que la contraseña coincida con la encriptada
@@ -34,9 +63,17 @@ export class Querys {
        const tokens = await generateAccessToken(result[0].user_id);
 
        if(tokens.error) {
-        return res.status(500).json({ error: tokens.error });
         console.log(tokens.error);
+        return res.status(500).json({ error: tokens.error });
        }
+
+       const userResponse = {
+        user_id: result[0].user_id,
+        name: result[0].name,
+        lastname: result[0].lastname,
+        email: result[0].email,
+        birthdate: result[0].birthdate
+        };
 
        res
         .cookie('access_token', tokens.accessToken, {
@@ -51,9 +88,10 @@ export class Querys {
             secure: process.env.NODE_ENV === 'production', // false en desarrollo
             maxAge: 7 * 24 * 60 * 60 * 1000, //7 dias
         })
-       .send({ message: 'Inicio de sesión exitoso'});
+       .send({ message: 'Inicio de sesión exitoso', user: userResponse });
    
      } catch (error) {
+         console.error("error",error);
         res.status(500).json({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
     // res.status(500).json({ error: error.message });
     //    console.error("error",error.message);
@@ -157,7 +195,7 @@ export class Querys {
 
         };
 
-        if(!validToken) return res.sendStatus(403);
+        if(!validToken) return res.sendStatus(404);
 
         // console.log("Valid token:", validToken)
         // console.log("Valid token id:",validToken.refresh_token_id )
@@ -240,14 +278,15 @@ export class Querys {
 
     static async createTournament (req,res) { 
         try {
-            const result = validateTournamentData(req.body);
+            const result = validatePartialTournamentData(req.body);
+            // console.log("Rounds Names", result.data.roundsNames);
 
             // if(!result.success) return res.status(400).json({ error: "Los datos del torneo no son válidos" });
             if(!result.success) return res.status(400).json({ error: result.error.issues[0].message });
             // console.log("sport id", result.data.sport);
 
-            const [insertTorunament] = await connection.query( "INSERT INTO tournaments (sport_id, tournament_name, total_teams, tournament_organizer, location, start_date, end_date, tournament_prize, inscription_price_per_team, tournament_requirements, tournament_type, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)",
-                [result.data.sport, result.data.tournamentName, result.data.totalTeams, result.data.organizer, result.data.location, result.data.startDate, result.data.endDate, result.data.prize, result.data.inscriptionPrice, result.data.requirements, result.data.tournamentType, req.user_id]
+            const [insertTorunament] = await connection.query( "INSERT INTO tournaments (sport_id, tournament_name, rounds_names, total_teams, tournament_organizer, location, start_date, end_date, tournament_prize, inscription_price_per_team, tournament_requirements, tournament_type, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)",
+                [result.data.sport, result.data.tournamentName,JSON.stringify(result.data.roundsNames), result.data.totalTeams, result.data.organizer, result.data.location, result.data.startDate, result.data.endDate, result.data.prize, result.data.inscriptionPrice, result.data.requirements, result.data.tournamentType, req.user_id]
             );
 
             if(insertTorunament.affectedRows === 0) return res.status(500).send({ error: 'No se ha podido crear el torneo, intentelo de nuevo' });
@@ -257,6 +296,80 @@ export class Querys {
         }catch (error) {
         res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
         console.error(error.message);
+        }
+    }
+
+    static async updateTournament (req,res) {
+        try {
+            const result = validateTournamentData(req.body);
+
+            console.log("tournament Id:", result.data.tournamentId);
+            console.log("tournament status:", result.data.tournamentStatus);
+            console.log("active:", result.data.isActive);
+
+            if(!result.success) return res.status(400).json({ error: result.error.issues[0].message });
+
+            const [updateTournament] = await connection.query("UPDATE tournaments SET sport_id=?, tournament_name=?, rounds_names=? ,total_teams=?, tournament_organizer=?, location=?, start_date=?, end_date=?, tournament_prize=?, inscription_price_per_team=?, tournament_requirements=?, tournament_type=?, created_by=?, tournament_status=?, is_active=? WHERE tournament_id = ?",
+                [result.data.sport, result.data.tournamentName,JSON.stringify(result.data.roundsNames), result.data.totalTeams,result.data.organizer,result.data.location, result.data.startDate, result.data.endDate,result.data.prize, result.data.inscriptionPrice, result.data.requirements, result.data.tournamentType, req.user_id, result.data.tournamentStatus, result.data.isActive, result.data.tournamentId]
+            )
+
+            if(updateTournament.affectedRows === 0) return res.status(400).send({ error: 'No se ha podido actualizar el torneo, intentelo de nuevo' });
+
+            return res.send({ message: 'Torneo actualizado correctamente' });
+
+        }catch (error) {
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            console.error(error.message);
+        }
+    }
+
+    static async selectTournament (req,res) {
+        try {
+            const tournamentId = req.body.tournamentId;
+
+            // console.log("Tournament Id", tournamentId);
+
+            if(!tournamentId) return res.status(400).send({ error: "El id del torneo no es valido" });
+
+            const [tournamentData] = await connection.query("SELECT * FROM tournaments WHERE tournament_id = ?", 
+                [tournamentId]);
+
+            if(tournamentData.length === 0) return res.status(404).send({ error: "No se ha encontrado el torneo" });
+
+            const [tournamentTeams] = await connection.query("SELECT * FROM tournament_teams_view WHERE tournament_id = ?", 
+                [tournamentId]);
+
+            return res.send({ tournamentData, tournamentTeams });
+
+
+        }catch (error) {
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            console.error(error.message);
+        }
+    }
+
+    static async tournamentInscription (req,res) {
+        try {
+            const { teamId, tournamentId } = req.body;
+            // console.log("Team id", teamId, "Tournament id", tournamentId);
+
+            if(!teamId || !tournamentId) return res.status(400).send({ error: "Los datos del torneo no son válidos" });
+
+            const [registeredTeam] = await connection.query("SELECT * FROM tournament_teams WHERE tournament_id = ? AND team_id = ?", 
+                [tournamentId, teamId]);
+
+            if(registeredTeam.length !== 0) return res.status(400).send({ error: "El equipo ya se encuentra inscrito en el torneo" });
+
+            const [insertInscription] = await connection.query("INSERT INTO tournament_teams (tournament_id, team_id ) VALUES (?, ?)", 
+                [tournamentId, teamId]);
+
+            if(insertInscription.affectedRows === 0) return res.status(500).send({ error: "No se ha podido inscribir el equipo al torneo, intentelo de nuevo" });
+
+            res.send({ message: "Equipo inscrito correctamente!!" });
+
+        }catch (error) {
+            console.error(error.message);
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
         }
     }
 
@@ -286,7 +399,7 @@ export class Querys {
     static async updateGameData(req,res) {
         try {
 
-            const {tournamentId,match,localScore,guestScore,nextMatch} = req.body;
+            const {tournamentId,match,localScore,guestScore,nextMatch,nextMatchExists} = req.body;
             const sport_id = 1;
             
             if(!tournamentId || !match || !nextMatch || !localScore || !guestScore) return res.status(400).json({ error: "Los datos del partido no son válidos" });
@@ -300,31 +413,80 @@ export class Querys {
 
             if(updateGameResult.affectedRows === 0) return res.status(400).send({ error: 'No se ha podido actualizar el partido, intentelo de nuevo' });
 
-            const [nextGameExist] = await connection.query( "SELECT * FROM games WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
-            [tournamentId, nextMatch.roundIndex, nextMatch.order]);
+            if(nextMatchExists) {
+                const [nextGameExist] = await connection.query( "SELECT * FROM games WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
+                [tournamentId, nextMatch.roundIndex, nextMatch.order]);
 
-            let nextGameResult; // variable fuera del bloque
+                let nextGameResult; // variable fuera del bloque
 
-            if(nextGameExist.length === 0) {
-                const [insertNextGame] = await connection.query( "INSERT INTO games (sport_id,tournament_id, round_index, game_order, local_team_id, guest_team_id ) VALUES (?,?, ?, ?, ?, ? )", 
-                [sport_id,tournamentId, nextMatch.roundIndex, nextMatch.order, nextGameLocalTeamId,nextGameGuestTeamId]);
+                if(nextGameExist.length === 0) {
+                    const [insertNextGame] = await connection.query( "INSERT INTO games (sport_id,tournament_id, round_index, game_order, local_team_id, guest_team_id ) VALUES (?,?, ?, ?, ?, ? )", 
+                    [sport_id,tournamentId, nextMatch.roundIndex, nextMatch.order, nextGameLocalTeamId,nextGameGuestTeamId]);
 
-                  nextGameResult = insertNextGame;
+                    nextGameResult = insertNextGame;
 
-            }else if(nextGameExist.length === 1) {
-                const [updateNextGame] = await connection.query( "UPDATE games SET local_team_id = ?, guest_team_id = ? WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
-                [nextGameLocalTeamId, nextGameGuestTeamId, tournamentId, nextMatch.roundIndex, nextMatch.order]);
+                }else if(nextGameExist.length === 1) {
+                    const [updateNextGame] = await connection.query( "UPDATE games SET local_team_id = ?, guest_team_id = ? WHERE tournament_id = ? AND round_index = ? AND game_order = ?", 
+                    [nextGameLocalTeamId, nextGameGuestTeamId, tournamentId, nextMatch.roundIndex, nextMatch.order]);
 
-                  nextGameResult = updateNextGame;
-            }
+                    nextGameResult = updateNextGame;
+                }
 
-            if(nextGameResult.affectedRows === 0) return res.status(500).send({error: 'No se ha podido actualizar el siguiente partido, intentelo de nuevo',data: {updateGameResult, insertNextGame}} )
-
+                if(nextGameResult.affectedRows === 0) return res.status(500).send({error: 'No se ha podido actualizar el siguiente partido, intentelo de nuevo',data: {updateGameResult, insertNextGame}} )
+            }   
             res.send({ message: 'Partido actualizado correctamente' });
 
         }catch(error) {
             // res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
             res.status(500).send({ error: error.message });
+        }
+    }
+
+    static async getTeams(req,res) {
+        try {
+            const userId = req.user_id;
+            const [teams] = await connection.query( "SELECT * FROM teams WHERE founder_id = ?",
+                [userId]);
+            res.send(teams);
+        } catch (error) {
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            console.error(error.message);
+        }
+    }
+
+    static async getGames(req,res) {
+        try {
+            const userId = req.user_id;
+            if(!userId) return res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+
+            const [userTeams] = await connection.query( "SELECT * FROM team_players WHERE user_id = ?",
+                [userId]);
+
+            if(userTeams.length === 0) return res.send({ message: "No estas inscrito en ningun equipo" });
+
+            const placeholder = userTeams.map(()=> '?').join(', ');
+            const userTeamsFormated = userTeams.map(team => team.team_id);
+
+            console.log(userTeams);
+
+            const [games] = await connection.query( `SELECT * FROM games WHERE local_team_id IN (${placeholder}) OR guest_team_id IN (${placeholder})`,
+                [...userTeamsFormated,...userTeamsFormated]);
+
+            if(games.length === 0) return res.send({ message: "No hay partidos disponibles" });
+             
+            // devuelve todos los id de los equipos, eliminando los dupplicados
+            const teamsId = games.map(game => game.local_team_id).concat(games.map(game => game.guest_team_id)).filter((teamId,index,arr) => arr.indexOf(teamId) === index); 
+            const teamsPlaceholder = teamsId.map(()=> '?').join(', ');
+            console.log(teamsId);
+
+            const [teams] = await connection.query( `SELECT * FROM tournament_teams_view WHERE team_id IN (${teamsPlaceholder})`,
+            [...teamsId]);
+
+            res.send({games,teams});
+
+        }catch(error) {
+            console.log("error", error.message);
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
         }
     }
     

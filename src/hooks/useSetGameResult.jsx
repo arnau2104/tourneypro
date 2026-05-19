@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react'
 import { refreshToken } from '../services/refreshToken';
 import { useNavigate } from 'react-router-dom';
+import launchConfetti from '../utils/launchConfetti';
 
 
-export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm,localTeam,guestTeam,tournamentId,navigate}) {
+
+export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm,localTeam,guestTeam,tournamentId,navigate,rounds}) {
     
 
 
@@ -191,6 +193,13 @@ export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm,localTe
     const updatedData = bracket.current.getAllData();
    const matchResult =  updatedData.matches.find( m => m.roundIndex == match.roundIndex && m.order === match.order);
    const nextMatchData = updatedData.matches.find( m => m.roundIndex == nextRoundIndex && m.order === nextOrder);
+   const nextMatchExists = nextMatch !== undefined;
+//    console.log("next match exists", nextMatchExists);
+
+   if(!nextMatchExists) {
+    console.log("Voy a tirar confeti", nextMatchExists);
+    launchConfetti();
+   }
 
    console.log("Updated data:", updatedData);
    console.log("Resultado del patido:", matchResult);
@@ -206,7 +215,8 @@ export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm,localTe
             match: matchResult,
             localScore : localTeamScore,
             guestScore: guestTeamScore,
-            nextMatch: nextMatchData
+            nextMatch: nextMatchData,
+            nextMatchExists
         }),
         credentials: 'include'
     }).then(async res => {
@@ -228,7 +238,8 @@ export function useSetGameResult({e,match,bracket,gamesScore,setOpenForm,localTe
                 body: JSON.stringify({
                     tournamentId,
                     match: matchResult,
-                    nextMatch: nextMatchData
+                    nextMatch: nextMatchData,
+                    nextMatchExists
                 }),
                 credentials: 'include'
             });

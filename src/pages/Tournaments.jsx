@@ -1,29 +1,30 @@
-import React, { useState,useEffect } from 'react'
+import React, { useState,useEffect, useContext } from 'react'
 import { useNavigate,NavLink } from 'react-router-dom'
 import { refreshToken } from '../services/refreshToken';
-import {X,Calendar, Trophy, Users, Clock, Plus,Minus,NotebookPen  } from 'lucide-react';
+import {X,Calendar, Trophy, Users, Clock, Plus,Minus,NotebookPen,Eye,Pencil,Search  } from 'lucide-react';
 import { TbTournament  } from "react-icons/tb";
 import { FaMapPin } from "react-icons/fa6";
 
+import CreateTournamentForm from '../hooks/CreateTournamentForm';
+import InscriptionForm from '../components/InscriptionForm';
+import {AuthContext} from '../context/userContext'
+
 function Tournaments() {
+  
+    const { user, setUser } = useContext(AuthContext);
 
-    const [openInsertForm, setOpenInsertForm] = useState(false)
-
-    const [tournamentName, setTournamentName] = useState('');
+    const [openInsertForm, setOpenInsertForm] = useState(false);
+    const [openInscriptionForm, setOpenInscriptionForm] = useState(false);
+    const [teams, setTeams] = useState([]);
     const [sport, setSport] = useState('');
-    const [organizer, setOrganizer] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [location, setLocation] = useState('');
-    const [totalTeams, setTotalTeams] = useState('');
-    const [tournamentType, setTournamentType] = useState('playoffs');
-    const [prize, setPrize] = useState('');
-    const [inscriptionPrice, setInscriptionPrice] = useState('');
-    const [requirements, setRequirements] = useState('');
-
     const [sportOptions, setSportOptions] = useState([]);
     const [tournaments, setTournaments] = useState([])
-    const [responseText, setResponseText] = useState(["", 'error'])
+    const [filteredTournaments, setFilteredTournaments] = useState([]);
+
+    const [selectedTournament, setSelectedTournament] = useState(null);
+    const [ action,setAction] = useState('insert');
+    const [tournamentId, setTournamentId] = useState(null);
+    const [showInput, setShowInput] = useState(false);
 
     const navigate = useNavigate();
 
@@ -76,90 +77,109 @@ function Tournaments() {
 
             if(data.tournaments.length > 0) {
                 setTournaments(data.tournaments)
+                setFilteredTournaments(data.tournaments)
             }
            
         }).catch(error => {
-            console.error("Error al obtener los deportes: ", error);
+            console.log("Error al obtener los deportes: ", error.message);
         })
     }
 
-     function sendFormData(e) {
-        e.preventDefault();
-
-        const data = JSON.stringify({
-                tournamentName,
-                sport : Number(sport),
-                organizer,
-                startDate,
-                endDate,
-                location,
-                totalTeams: Number(totalTeams),
-                tournamentType : tournamentType.trim(),
-                prize,
-                inscriptionPrice: Number(inscriptionPrice),
-                requirements
-        });
-
-        fetch('/api/createTournament', { 
+    function handleInscription(tournamentId) {
+        setTournamentId(tournamentId);
+        console.log("inscripcion");
+        fetch('/api/getTeams', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: data,
             credentials: 'include'
         }).then(async res => {
-            if(res.status === 401) { 
-                const refreshOk = await refreshToken();
+              if(res.status === 401) {
+
+                const refreshOk = await refreshToken(); // intentar refrescar el token
 
                 if(!refreshOk) {
-                    navigate('/login');
+                    navigate('/login'); //redirigir al usuario a la página de login para que inicie sesión de nuevo
                     return;
                 }
 
-                return fetch('/api/createTournament', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: data,
-                    credentials: 'include'
-                })
+                   // 🔥 IMPORTANTE: volver a intentar la petición original
+                   const retryFetch = await fetch('/api/getTeams', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+
+                    return retryFetch.json(); //devolvemos directamente el json
             }
+
+            return res.json();
+        }).then(data => {
+            console.log("Data:", data);
+
+            if(data.error) return console.log(data.error);
+            setTeams(data);
+            setOpenInscriptionForm(true);
+        }).catch(error => {
+            console.log("Error:", error.message);
+        })
+
+    }
+
+    function updateTournament(tournamentId) {
+        console.log("update tournament", tournamentId);
+
+        fetch('/api/selectTournament', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({tournamentId}),
+            credentials: 'include'
+        }).then(async res => {
+                if(res.status === 401) { 
+                    const refreshOk = await refreshToken();
+
+                    if(!refreshOk) {
+                        navigate('/login');
+                        return;
+                    }
+
+                    return fetch('/api/selectTournament', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                         body: JSON.stringify({tournamentId}),
+                        credentials: 'include'
+                    })
+                }
             
             if(!res) return;
             return res.json();
-        })
-        .then(data => {
-            console.log(data);
-            // console.log(data.error);
-            // console.log(data.message);
+        }).then(data => {
+            console.log("Data:", data);
 
-            if(data.error) {
-                setResponseText([data.error, 'error']);
-                return;
-            }
+            if(data.error) return console.log(data.error);
 
-            setResponseText(["Torneo creado correctamente", 'correcto']);
-            setTimeout(()=>{
-
-                    setTournamentName('');
-                    setSport('');
-                    setOrganizer('');
-                    setStartDate('');
-                    setEndDate('');
-                    setLocation('');
-                    setTotalTeams('');
-                    setTournamentType('playoffs');
-                    setPrize('');
-                    setInscriptionPrice('');
-                    setRequirements('')
-                    
-            },1000)
+           setSelectedTournament(data);
+           setAction('update');
+           setOpenInsertForm(true);
+           window.scrollTo({top: 0, behavior: 'smooth'});
 
         }).catch(error => {
-            console.log("error en el insert", error.message);
+            console.log("error", error.message);
         })
+    }
 
+    function searchTournament(text) {
+        // console.log("Text", text);
+      const searchedTournament =  tournaments.filter(tournament => tournament.tournament_name.toLowerCase().includes(text.toLowerCase()));
+      setFilteredTournaments(searchedTournament);
+        // console.log(searchedTournament);
     }
 
   return (
@@ -168,123 +188,72 @@ function Tournaments() {
         <div className='torneo-header'>
             <div>
                 <h1>Torneos</h1>
-                <p>Gestiona los torneos en los que estas inscrito</p>
+                <p>Explora Torneos, apuntate y gestionalos</p>
             </div>
-            <button className={`icon-button ${openInsertForm ? "open" : ""}`} onClick={()=>setOpenInsertForm(!openInsertForm)} >
+            <button className={`icon-button ${openInsertForm ? "open" : ""}`} onClick={()=>{setAction('insert'); setOpenInsertForm(!openInsertForm)}} >
                  <Plus className='icon plus' />  
                  <Minus className='icon minus' />
-                </button>
+            </button>
+           
 
+        </div>
+        <div className='search-container'>
+            
+            <select>
+                    <option value="">Todos los torneos</option>
+                    <option value="">Torneos en los que estas inscrito</option>
+                    <option value="">Torneos para inscribirte</option>
+            </select>
+            <label htmlFor="search-tournament">
+                <Search onClick={()=> setShowInput(!showInput)} />
+                {showInput && <input onInput={(e)=> searchTournament(e.target.value)} id='search-tournament' name='search-tournament' type="text" /> }
+            </label>
         </div>
     
     {/* <button onClick={()=>setOpenInsertForm(true)}>Crear Torneo</button>  */}
            
 
     {openInsertForm && (
-
-        <div className='crear-torneo-container'>
-            <div>
-                <div className='cerrar-crear-torneo'><h3>Crear Torneo</h3> <X onClick={()=> setOpenInsertForm(false)} /></div>
-                <p>Configura los detalles del torneo</p>
-            </div>
-
-            <form onSubmit={(e) => sendFormData(e)}>
-                <label htmlFor="tournament-name">Nombre del Torneo
-                    <input type="text" id="tournament-name" name="tournament-name"  placeholder='Ej: Torneo de Vernao 2026' value={tournamentName} onChange={(e) => setTournamentName(e.target.value)} />
-                </label>
-                
-                <div>
-                    <label htmlFor="sport">Deporte
-                        <select id="sport" name="sport" value={sport} onChange={(e) => setSport(e.target.value)}>
-                            {sportOptions.length > 0 ? ( sportOptions.map(sport => {
-                                return <option key={sport.sport_id} value={sport.sport_id}>{ucFirst(sport.sport_name)}</option>
-                            })) : <option value="">No hay deportes disponibles</option>}
-                        </select>
-                    </label>
-
-                    <label htmlFor="tournament-organizer">Organizador del Torneo
-                        <input type="text" id="tournament-organizer" name="tournament-organizer" placeholder='Nombre del organizador' value={organizer} onChange={(e) => setOrganizer(e.target.value)} />
-                    </label>
-                    
-                </div>
-
-                <div>
-                    <label htmlFor="start-date">Fecha de Inicio 
-                        <input type="date" id="start-date" name="start-date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </label>
-                
-                    
-                    <label htmlFor="end-date">Fecha de Fin
-                        <input type="date" id="end-date" name="end-date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </label>
-                    
-                </div>
-
-                <div>
-                    <label htmlFor="location">Ubicación
-                        <input type="text" id="location" name="location" placeholder='Ciudad, País' value={location} onChange={(e) => setLocation(e.target.value)} />
-                    </label>
-                    
-
-                    <label htmlFor="total-teams">Número de Equipos
-                        <input type="number" id="total-teams" name="total-teams" placeholder='Ej: 8' value={totalTeams} onChange={(e) => setTotalTeams(e.target.value)} />
-                    </label>
-                    
-                </div>
-
-                <label htmlFor="tournament-type">Tipo de Torneo
-                    <select id="tournament-type" name="tournament-type" value={tournamentType} onChange={(e) => setTournamentType(e.target.value)}>
-                        <option value="playoffs">Eliminatorias</option>
-                        <option value="league">Liga</option>
-                        <option value="playoffs,league">Liga + Eliminatorias</option>
-                    </select>
-                </label>
-
-                <div>
-                    <label htmlFor="tournament-prize">Premio del Torneo (opcional)
-                        <input type="text" id="tournament-prize" name="tournament-prize" placeholder='Ej: 1000€' value={prize} onChange={(e) => setPrize(e.target.value)} />
-                    </label>
-                    
-                    <label htmlFor="inscription-price-per-team">Precio de Inscripción por Equipo 
-                        <input type="number" id="inscription-price-per-team" name="inscription-price-per-team" placeholder='Ej: 50€' value={inscriptionPrice} onChange={(e) => setInscriptionPrice(e.target.value)} />
-                    </label>
-                    
-                </div>
-
-                    <label htmlFor="tournament-requirements">Requisitos del Torneo (opcional)
-                        <input type="text" id="tournament-requirements" name="tournament-requirements" placeholder='Ej: Equipos deben tener mínimo 11 jugadores' value={requirements} onChange={(e) => setRequirements(e.target.value)} />
-                    </label> 
-
-                <button type="submit">Crear Torneo</button>
-
-            <p className={`response ${responseText[1]} `}>{responseText[0]}</p>
-
-            </form>
-            
-        </div>
+        <CreateTournamentForm 
+            action={action}
+            {...(selectedTournament && { data: selectedTournament })}
+            sportOptions={sportOptions}
+            sport={sport}
+            setSport={setSport}
+            ucFirst={ucFirst}
+            navigate={navigate}
+        />
+        )}
+    {openInscriptionForm && (
+        <InscriptionForm teams = {teams} setOpenInscriptionForm={setOpenInscriptionForm} tournamentId={tournamentId} navigate={navigate}/>
     )}
 
     {tournaments.length > 0 && (
 
         <section className="tournaments-container">
-            {tournaments.map(tournament => {
-                return <NavLink to="/torneo"  key={tournament.tournament_id}>
-                                <div className='tournament-card'>
+            {filteredTournaments.map(tournament => {
+                return (
+                                <div key={tournament.tournament_id} className='tournament-card'>
+                                    <NavLink to="/torneo"  >
                                     <p className='tournament-title'>{tournament.tournament_name}</p>
+                                    </NavLink>
                                     <ul>
                                         <li><TbTournament /> {ucFirst(tournament.tournament_type.replace(",", " \n +\n"))}</li>
                                         <li><NotebookPen   /> {tournament.inscription_price_per_team}€ (por equipo)</li>
                                         <li><Users /> {tournament.total_teams} equipos</li>
                                         <li><Clock /> 18:00</li>
+                                        <li><FaMapPin /> {tournament.location}</li>
+                                        <li><Calendar /> {new Date(tournament.start_date).toLocaleDateString()}</li>
                                         <li> <Trophy /> {ucFirst(tournament.tournament_prize)}</li>
                                     </ul>
-                                    {/* <p><Trophy /> {ucFirst(tournament.tournament_prize)}</p> */}
-                                    <div className='card-date-location'>
-                                        <p><Calendar /> {new Date(tournament.start_date).toLocaleDateString()}</p>
-                                        <p><FaMapPin /> {tournament.location}</p>
+                                    <div className='card-buttons'>
+                                        <div>
+                                             <NavLink to="/torneo"  ><button><Eye /> </button></NavLink>
+                                            {tournament.created_by === user?.user_id && <button onClick={()=> updateTournament(tournament.tournament_id)}><Pencil /></button>}
+                                        </div>
+                                        <button onClick={()=> handleInscription(tournament.tournament_id)}><Pencil />Inscribirse</button>
                                     </div>                            
-                                </div>
-                        </NavLink>
+                                </div>)
             })}
         </section>
 
