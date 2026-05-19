@@ -1,7 +1,7 @@
 import { connection } from '../db_connection.js';
+import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: 'backend/.env' });
-import bcrypt from 'bcrypt';
+dotenv.config({ path: path.resolve(process.cwd(), 'backend/.env') });import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { validateUserData, validatePartialUserData, validateTournamentData, validatePartialTournamentData } from '../schemas.js';
@@ -91,7 +91,7 @@ export class Querys {
        .send({ message: 'Inicio de sesión exitoso', user: userResponse });
    
      } catch (error) {
-         console.error("error",error);
+         console.error("ERROR REAL: ",error);
         res.status(500).json({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
     // res.status(500).json({ error: error.message });
     //    console.error("error",error.message);
@@ -445,7 +445,7 @@ export class Querys {
     static async getTeams(req,res) {
         try {
             const userId = req.user_id;
-            const [teams] = await connection.query( "SELECT * FROM teams WHERE founder_id = ?",
+            const [teams] = await connection.query( "SELECT * FROM teams_view WHERE founder_id = ?",
                 [userId]);
             res.send(teams);
         } catch (error) {
@@ -518,6 +518,7 @@ async function generateAccessToken(id) {
          return { accessToken, refreshToken };
 
         } catch (error) {
+            console.log("ERROR EN GENERATE ACCES TOKEN", error)
             return {error: "Ha ocurrido un error insesperado, intentelo de nuevo" };
          }
 
