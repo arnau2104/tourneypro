@@ -571,6 +571,59 @@ input:focus {
   margin-top: 25px;
 }
 
+.teams-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.team-card {
+  min-height: 180px;
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0px 15px;
+}
+
+.team-shield-card {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background-color: var(--secondary);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.team-shield-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-shield-card span {
+  color: var(--foreground);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.team-subtitle {
+  color: var(--secondary-text-color);
+  margin-top: 5px;
+}
+
+.empty-state {
+  margin: 40px 15px;
+  padding: 30px 20px;
+  border-radius: 14px;
+  background-color: var(--card);
+  color: var(--secondary-text-color);
+  text-align: center;
+}
+
 .tournament-card {
   display: flex;
   flex-direction: column;

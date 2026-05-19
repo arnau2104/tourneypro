@@ -1,9 +1,10 @@
 import mysql from 'mysql2/promise';
 
 const config = {
-    host: 'localhost',
+    host: 'localhost',  // cambia localhost por esto
+    port: 8889,          // añade el puerto de MAMP
     user: 'root',
-    password: '',
+    password: 'root',    // en MAMP la password por defecto es root
     database: 'tourneypro'
 }
 
