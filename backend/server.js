@@ -60,6 +60,9 @@ app.get('/api/me',authMiddleware, Querys.me);
  app.post('/api/updateGameData', authMiddleware, Querys.updateGameData);
  app.post('/api/selectTournament', authMiddleware, Querys.selectTournament);
  app.post('/api/getTeams', authMiddleware, Querys.getTeams);
+ app.put('/api/updateTeam', authMiddleware, Querys.updateTeam);
+ app.post('/api/getUserTeams', authMiddleware, Querys.getUserTeams);
+ app.get('/api/getAllTeams', authMiddleware, Querys.getAllTeams);
  app.get('/api/getGames',authMiddleware, Querys.getGames);
 
 app.listen(port, () => {

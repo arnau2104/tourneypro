@@ -195,7 +195,10 @@ export class Querys {
 
         };
 
-        if(!validToken) return res.sendStatus(404);
+        if(!validToken) return res.sendStatus(403);
+
+        const newTokens = await generateAccessToken(decoded.user_id); //la funcion ya hace insert del nuevo refresh token en la bd
+
 
         // console.log("Valid token:", validToken)
         // console.log("Valid token id:",validToken.refresh_token_id )
@@ -204,9 +207,9 @@ export class Querys {
         const [deletOldTOken] = await connection.query("DELETE FROM refresh_tokens WHERE refresh_token_id= ?",
             [validToken.refresh_token_id]);
 
-        console.log("Filas afectadas",deletOldTOken.affectedRows);
+
+        console.log("Filas de tokens afectadas",deletOldTOken.affectedRows);
             
-        const newTokens = await generateAccessToken(decoded.user_id); //la funcion ya hace insert del nuevo refresh token en la bd
         
         res
             .cookie('access_token', newTokens.accessToken, {
@@ -442,17 +445,105 @@ export class Querys {
         }
     }
 
+    static async updateTeam(req,res) {
+        try {
+            const { team_id, team_name, team_description, max_players, team_shield } = req.body;
+
+            if (!team_id || !team_name || !max_players) {
+                return res.status(400).send({ error: 'Los datos del equipo no son válidos' });
+            }
+
+            const [teamOwner] = await connection.query(
+                "SELECT founder_id FROM teams WHERE team_id = ?",
+                [team_id]
+            );
+
+            if (teamOwner.length === 0) {
+                return res.status(404).send({ error: 'No se ha encontrado el equipo' });
+            }
+
+            if (teamOwner[0].founder_id !== req.user_id) {
+                return res.status(403).send({ error: 'No tienes permisos para editar este equipo' });
+            }
+
+            const [updateTeam] = await connection.query(
+                "UPDATE teams SET team_name = ?, team_description = ?, max_players = ?, team_shield = ? WHERE team_id = ?",
+                [team_name, team_description || '', max_players, team_shield || '', team_id]
+            );
+
+            if (updateTeam.affectedRows === 0) {
+                return res.status(400).send({ error: 'No se ha podido actualizar el equipo, intentelo de nuevo' });
+            }
+
+            const [updatedTeam] = await connection.query(
+                "SELECT * FROM teams_view WHERE team_id = ?",
+                [team_id]
+            );
+
+            return res.send({
+                message: 'Equipo actualizado correctamente',
+                team: updatedTeam[0] || null,
+            });
+        } catch (error) {
+            res.status(500).send({ error: 'Ha ocurrido un error insesperado, intentelo de nuevo' });
+            console.error(error.message);
+        }
+    }
+
     static async getTeams(req,res) {
         try {
             const userId = req.user_id;
             const [teams] = await connection.query( "SELECT * FROM teams_view WHERE founder_id = ?",
+                [userId]);      
+            
+            res.send( teams);
+        } catch (error) {
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            console.error(error.message);
+        }
+
+    }
+
+    static async getAllTeams(req,res) {
+        try {
+            const [allTeams] = await connection.query( "SELECT * FROM teams_view");
+            
+            res.send( allTeams);
+        } catch (error) {
+            res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
+            console.error(error.message);
+        }
+
+    }
+    
+    static async getUserTeams(req,res) {
+        try {
+            const userId = req.user_id;
+            const [teams] = await connection.query( "SELECT team_id,team_name,team_description, max_players,founder_id,team_shield FROM team_players_view WHERE user_id = ?",
                 [userId]);
-            res.send(teams);
+
+                if (teams.length === 0) {
+            return res.send({ teams: [], players: [] });
+        }
+
+        // Extraer los IDs de los equipos obtenidos (usar la key `team_id` consistente con la vista)
+        const teamIds = teams.map(team => team.team_id);
+
+        // Preparar el placeholder para la consulta
+        const placeholder = teamIds.map(() => '?').join(', ');
+        const teamIdsFormated = teamIds;
+
+            const [playerTeams] = await connection.query( `SELECT * FROM team_players_view WHERE team_id IN (${placeholder})`,
+                [...teamIdsFormated]);
+            
+            res.send({ teams, players: playerTeams });
         } catch (error) {
             res.status(500).send({ error: "Ha ocurrido un error insesperado, intentelo de nuevo" });
             console.error(error.message);
         }
     }
+
+
 
     static async getGames(req,res) {
         try {

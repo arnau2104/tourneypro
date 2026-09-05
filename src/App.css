@@ -51,7 +51,7 @@ form {
   /* margin-bottom: 150px; */
 }
 
-input, select {
+input, select,textarea {
   padding: 10px;
   border-radius: 8px;
   background-color: var(--secondary-color);
@@ -571,6 +571,8 @@ input:focus {
   margin-top: 25px;
 }
 
+/* INCI CSS PAGE TEAMS */
+
 .teams-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -583,14 +585,15 @@ input:focus {
 
 .team-card-header {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  justify-content: space-between;
   gap: 15px;
   padding: 0px 15px;
 }
 
 .team-shield-card {
-  width: 72px;
-  height: 72px;
+  width: 100px;
+  height: 100px;
   border-radius: 18px;
   background-color: var(--secondary);
   display: grid;
@@ -623,6 +626,57 @@ input:focus {
   color: var(--secondary-text-color);
   text-align: center;
 }
+
+.team-record {
+  display: flex;
+  gap: 10px;
+  font-weight: bold;
+}
+
+.team-record p {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.team-record .wins {
+  color: var(--secondary-accent);
+}
+.team-record .losses {
+  color: var(--orange);
+}
+
+.edit-team-form label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-team-form .edit-team-shield {
+  max-width: 100px;
+  align-self: center;
+}
+
+.edit-team-form .edit-team-shield img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* .founder-container {
+  box-sizing: content-box;
+  padding: 25px;
+} */
+
+.founder-icon {
+  width: 20px;
+  height: 20px;
+  stroke: goldenrod !important;
+  fill: goldenrod;
+}
+
+/* FINAL CSS PAGE TEAMS */
 
 .tournament-card {
   display: flex;
