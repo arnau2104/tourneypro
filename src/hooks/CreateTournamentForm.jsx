@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react'
 import { refreshToken } from '../services/refreshToken';
 import { set } from 'zod';
 
-function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,navigate}) {
+function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,navigate,onSaved,setOpenInsertForm}) {
 
     const [tournamentName, setTournamentName] = useState('');
     const [organizer, setOrganizer] = useState('');
@@ -15,8 +15,8 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
     const [inscriptionPrice, setInscriptionPrice] = useState('');
     const [requirements, setRequirements] = useState('');
     const [roundsNames, setRoundsNames] = useState([]);
-    const [isActive, setIsActive] = useState('') ;
-    const [tournamentStatus, setTournamentStatus] = useState('');
+    const [isActive, setIsActive] = useState('1') ;
+    const [tournamentStatus, setTournamentStatus] = useState('próximamente');
     const [tournamentId, setTournamentId] = useState('');
     
     
@@ -50,6 +50,16 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
  function sendFormData(e) {
         e.preventDefault();
 
+        if(tournamentType.includes('playoffs')) {
+            const teamsNumber = Number(totalTeams);
+            const isPowerOfTwo = teamsNumber >= 4 && Number.isInteger(Math.log2(teamsNumber));
+
+            if(!isPowerOfTwo) {
+                setResponseText(['El número de equipos debe ser una potencia de 2 (4, 8, 16, 32...) para poder generar las eliminatorias', 'error']);
+                return;
+            }
+        }
+        console.log("action:", action);
         console.log("Round Names:", roundsNames);
         console.log("Tournament id:", tournamentId);
         console.log("Sport id", sport);
@@ -71,7 +81,7 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
                 inscriptionPrice: Number(inscriptionPrice),
                 requirements,
                 tournamentStatus,
-                isActive
+                isActive: Number(isActive)
         });
 
         fetch(requestUrl, { 
@@ -129,7 +139,12 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
                     setInscriptionPrice('');
                     setRequirements('')
                     setRoundsNames([]);
+
+                    
                 } ;
+
+                setOpenInsertForm(false);
+                onSaved();
                     
             },1000)
 
@@ -142,7 +157,7 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
   return (
       <div className='crear-torneo-container'>
             <div>
-                <div className='cerrar-crear-torneo'><h3>Crear Torneo</h3> </div>
+                <div className='cerrar-crear-torneo'><h3>{action === 'insert' ? 'Crear Torneo' : 'Editar Torneo'}</h3> </div>
                 {/* <p>Configura los detalles del torneo</p> */}
             </div>
 
@@ -217,8 +232,8 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
                         <input type="text" id="tournament-requirements" name="tournament-requirements" placeholder='Ej: Equipos deben tener mínimo 11 jugadores' value={requirements} onChange={(e) => setRequirements(e.target.value)} />
                     </label> 
 
-                {data && (
-                    <>
+                
+                   
                         <label htmlFor="tournament-status">Estado del Torneo
                             <select id="tournament-status" name="tournament-status" value={tournamentStatus} onChange={(e) => setTournamentStatus(e.target.value)}>
                                 <option value="próximamente">Próximamente</option>
@@ -228,7 +243,8 @@ function CreateTournamentForm({action,data,sportOptions,sport,setSport,ucFirst,n
                                 <option value="cerrado">Cerrado</option>
                             </select>
                         </label>
-
+{data && (
+     <>
                         <label htmlFor="isActive">Torneo Activo
                             <select id="isActive" name="isActive" value={isActive} onChange={(e) => setIsActive(e.target.value)}>
                                 <option value="1">Activo</option>

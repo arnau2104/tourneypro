@@ -2,6 +2,7 @@ import express from 'express';
 import { Querys } from './querys/querys.js';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 
 
 const port = process.env.PORT || 3000;
@@ -38,6 +39,22 @@ const authMiddleware = (req, res, next) => { //middleware para comprovar que hay
 
 };
 
+const loginLimiterMiddleware = rateLimit({
+   windowMs: 15 * 60 * 1000, // ventana de tiempo: 15 min
+  max: 5,                   // nº máx de peticiones permitidas por IP en esa ventana
+  standardHeaders: true,     // añade cabeceras RateLimit-Limit / -Remaining / -Reset
+  legacyHeaders: false,      // desactiva las cabeceras antiguas X-RateLimit-*
+  message: { error: 'Demasiados intentos, inténtalo más tarde' }, // body de la respuesta 429
+}); 
+
+const registerLimiterMiddleware = rateLimit({
+   windowMs: 15 * 60 * 1000, // ventana de tiempo: 15 min
+  max: 5,                   // nº máx de peticiones permitidas por IP en esa ventana
+  standardHeaders: true,     // añade cabeceras RateLimit-Limit / -Remaining / -Reset
+  legacyHeaders: false,      // desactiva las cabeceras antiguas X-RateLimit-*
+  message: { error: 'Demasiados intentos, inténtalo más tarde' }, // body de la respuesta 429
+}); 
+
 app.get('/api', (req,res) => {
   res.send({message: 'Hello World!'});
   console.log('Hello World');
@@ -45,25 +62,32 @@ app.get('/api', (req,res) => {
 
 
  //RUTAS PUBLICAS
- app.post('/api/login', Querys.login);
- app.post('/api/register', Querys.register);
+ app.post('/api/login', loginLimiterMiddleware, Querys.login);
+ app.post('/api/register',registerLimiterMiddleware, Querys.register);
  app.post('/api/refresh', Querys.refreshToken);
  app.post('/api/logout', Querys.logout);
+app.get('/api/getDashboardData', Querys.getDashboardData);
+
 
  //RUTAS PROTEGIDAS
-app.get('/api/me',authMiddleware, Querys.me);
+ app.get('/api/me',authMiddleware, Querys.me);
  app.get('/api/tournamentPageData', authMiddleware, Querys.tournamentPageData);
  app.post('/api/createTournament', authMiddleware, Querys.createTournament);
  app.post('/api/updateTournament', authMiddleware, Querys.updateTournament);
  app.post('/api/tournamentInscription', authMiddleware, Querys.tournamentInscription);
- app.get('/api/tournamentData', authMiddleware, Querys.tournamentData);
+ app.post('/api/tournamentData', authMiddleware, Querys.tournamentData);
  app.post('/api/updateGameData', authMiddleware, Querys.updateGameData);
+ app.post('/api/generateMatches', authMiddleware, Querys.generateMatches);
  app.post('/api/selectTournament', authMiddleware, Querys.selectTournament);
  app.post('/api/getTeams', authMiddleware, Querys.getTeams);
  app.put('/api/updateTeam', authMiddleware, Querys.updateTeam);
  app.post('/api/getUserTeams', authMiddleware, Querys.getUserTeams);
  app.get('/api/getAllTeams', authMiddleware, Querys.getAllTeams);
  app.get('/api/getGames',authMiddleware, Querys.getGames);
+ app.get('/api/getAllGames',authMiddleware, Querys.getAllGames);
+ app.post('/api/createTeam', authMiddleware, Querys.createTeam);
+ app.post('/api/joinTeam', authMiddleware, Querys.joinTeam);
+ app.get('/api/getMyInscriptions', authMiddleware, Querys.getMyInscriptions);
 
 app.listen(port, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${port}`);

@@ -13,6 +13,9 @@ function Games() {
     const [showInput, setShowInput] = useState(false);
     const [games, setGames] = useState([]);
     const [teams, setTeams] = useState([]);
+    const [filteredGames, setFilteredGames] = useState([]);
+    const [searchText, setSearchText] = useState('');
+    const [filterOption, setFilterOption] = useState('all');
     const [openEditGameForm, setOpenEditGameForm] = useState(false);
     const [selectedGame, setSelectedGame] = useState(null);
 
@@ -22,6 +25,26 @@ function Games() {
     useEffect(() => {
         getGamesData();
     },[]);
+
+    useEffect(() => {
+        if(!games || !teams) return;
+        const normalizedSearch = searchText.trim().toLowerCase();
+
+        const filtered = games.filter((game) => {
+            if(filterOption === 'played' && game.game_status !== 'finalizado') return false;
+            if(filterOption === 'pending' && (game.game_status === 'finalizado' || game.game_status === 'cancelado')) return false;
+
+            if(normalizedSearch === '') return true;
+
+            const localTeamName = teams.find(team => team.team_id === game.local_team_id)?.team_name || '';
+            const guestTeamName = teams.find(team => team.team_id === game.guest_team_id)?.team_name || '';
+            const tournamentName = teams.find(t => t.tournament_id === game.tournament_id)?.tournament_name || '';
+
+            return `${localTeamName} ${guestTeamName} ${tournamentName}`.toLowerCase().includes(normalizedSearch);
+        });
+
+        setFilteredGames(filtered);
+    }, [games, teams, searchText, filterOption]);
 
     function getGamesData() {
         fetch('/api/getGames', {
@@ -80,14 +103,23 @@ function Games() {
         </div>
         <div className='search-container'>
             
-            <select>
-                    <option value="">Todos los partidos</option>
-                    <option value="">Partidos por jugar</option>
-                    <option value="">Partidos jugados</option>
+            <select value={filterOption} onChange={(e) => setFilterOption(e.target.value)}>
+                    <option value="all">Todos los partidos</option>
+                    <option value="pending">Partidos por jugar</option>
+                    <option value="played">Partidos jugados</option>
             </select>
             <label htmlFor="search-tournament">
                 <Search onClick={()=> setShowInput(!showInput)} />
-                {showInput && <input onInput={console.log("buscando...")} id='search-tournament' name='search-tournament' type="text" /> }
+                {showInput && (
+                    <input
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        id='search-tournament'
+                        name='search-tournament'
+                        type="text"
+                        placeholder='Buscar partido...'
+                    />
+                )}
             </label>
         </div>
     
@@ -100,28 +132,29 @@ function Games() {
         />
     }
 
-    {games.length > 0 && teams.length > 0 &&
+    {games && teams  ?
+    (
         <section className="tournaments-container games-container">
-                {games.map((game) => {
-                    const localTeam = teams.find(team => team.team_id === game.local_team_id);
-                    const guestTeam = teams.find(team => team.team_id === game.guest_team_id);
+                {filteredGames.map((game) => {
+                    const localTeam = teams.find(team => team.team_id === game.local_team_id) ?? { team_name: 'TBD', team_shield: '' };
+                    const guestTeam = teams.find(team => team.team_id === game.guest_team_id) ?? { team_name: 'TBD', team_shield: '' };
                     const tournamentName = teams.find(t => t.tournament_id === game.tournament_id);
-                    console.log("Tournament name", tournamentName.tournament_name);
+
                     return (
                         <div key={game.id} className="tournament-card">
                             <p className='tournament-title'><span>{localTeam.team_name}</span> <span> vs </span> <span>{guestTeam.team_name}</span></p>
                            <div className="teams-shield">
                             <div>
-                                <img src={localTeam.team_shield} alt="" />
+                                {localTeam.team_shield && <img src={localTeam.team_shield} alt="" />}
                                 <div className="game-result">
                                     {game.local_team_score && JSON.parse(game.local_team_score).map((score, index) => {
                                         // console.log("score", score.mainScore);
-                                       return <p className={score.isWinner ? "winner" : "looser"} key={index}>{score.mainScore}</p> 
+                                       return <p className={score.isWinner ? "winner" : "looser"} key={index}>{score.mainScore}</p>
                                     })}
                                 </div>
                             </div>
                             <div>
-                                <img src={guestTeam.team_shield} alt="" />
+                                {guestTeam.team_shield && <img src={guestTeam.team_shield} alt="" />}
                                  <div className="game-result">
                                     {game.guest_team_score && JSON.parse(game.guest_team_score).map((score, index) => {
                                         // console.log("score", score.mainScore);
@@ -158,7 +191,12 @@ function Games() {
                     );
                 })}
             </section>
-    }
+    ) : (
+       <div className='empty-state'>
+          <p>No tienes inscripciones disponibles.</p>
+          <p>Inscribe a tu equipo en un torneo desde el apartado de Torneos para verlo aquí.</p>
+        </div>
+    )}
              
     </section>
   )

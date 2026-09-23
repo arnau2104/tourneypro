@@ -1,6 +1,7 @@
 import { useState,useContext,useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {AuthContext} from '../context/userContext'
+import {refreshToken} from '../services/refreshToken';
 import {
   LayoutDashboard,
   Trophy,
@@ -22,6 +23,10 @@ const Sidebar = () => {
   const [activeLink, setActiveLink] = useState('/');
   const [showLogout, setShowLogout] = useState(false);
   const { user, setUser } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const publicPaths = ['/', '/login'];
 
   useEffect(() => {
     // console.log("user:", user);
@@ -58,6 +63,11 @@ const Sidebar = () => {
 
         console.log("logout hecho");
         setUser(null);
+
+        if (!publicPaths.includes(location.pathname)) {
+        navigate('/login');
+      }
+
       }).catch(err => console.log(err));
   }
 
@@ -85,13 +95,13 @@ const Sidebar = () => {
         <div  style={{ display: mobileOpen ? "block" : "none" }} className="overlay"> </div>
           
         <nav className={`mobile-sidebar ${mobileOpen ? "mobile-sidebar-open" : ""}`}>
-          <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/')}} to="/"><p className={`menu-button ${activeLink === '/' ? 'link-active' : ''}`}><LayoutDashboard /> Dashnoard</p></NavLink>
+          <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/')}} to="/"><p className={`menu-button ${activeLink === '/' ? 'link-active' : ''}`}><LayoutDashboard /> Dashboard</p></NavLink>
           <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/torneos')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/torneos"><p className={`menu-button ${activeLink === '/torneos' ? 'link-active' : ''}`}> <Trophy />Torneos</p></NavLink>
           <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/partidos')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/partidos"><p className={`menu-button ${activeLink === '/partidos' ? 'link-active' : ''}`}> <Volleyball />Partidos</p></NavLink>
           <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/equipos')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/equipos"><p className={`menu-button ${activeLink === '/equipos' ? 'link-active' : ''}`}> <Users /> Equipos</p></NavLink>
           <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/calendario')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/calendario"><p className={`menu-button ${activeLink === '/calendario' ? 'link-active' : ''}`}> <Calendar /> Calendario</p></NavLink>
-          <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/clasificacion')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/clasificacion"><p className={`menu-button ${activeLink === '/clasificacion' ? 'link-active' : ''}`}> <BarChart3 /> Clasificación</p></NavLink>
-          <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/inscripciones')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/inscripciones"><p className={`menu-button ${activeLink === '/clasificacion' ? 'link-active' : ''}`}> <ArrowUpRight /> Mis Inscripciones</p></NavLink>
+          {/* <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/clasificacion')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/clasificacion"><p className={`menu-button ${activeLink === '/clasificacion' ? 'link-active' : ''}`}> <BarChart3 /> Clasificación</p></NavLink> */}
+          <NavLink onClick={()=> {setMobileOpen(false); setActiveLink('/inscripciones')}} className={({ isActive }) => isActive ? 'link-active' : ''} to="/inscripciones"><p className={`menu-button ${activeLink === '/inscripciones' ? 'link-active' : ''}`}> <ArrowUpRight /> Mis Inscripciones</p></NavLink>
          </nav>
       
     </>

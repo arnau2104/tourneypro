@@ -1,11 +1,14 @@
 import { createContext, useState, useEffect } from "react";
 import { refreshToken } from '../services/refreshToken';
+import { useNavigate } from "react-router-dom";
+
 
 
 export const AuthContext = createContext();
 
 export function UserContextProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate();
 
   // comprobar sesión al cargar la app
   useEffect(() => {
@@ -30,7 +33,7 @@ export function UserContextProvider({ children }) {
                                 'Content-Type': 'application/json',
                             },
                             credentials: 'include'
-                        })
+                        }).then(r => r.json())
                     }
                 
                 if(!res) return;

@@ -6,7 +6,7 @@ import { refreshToken } from '../services/refreshToken';
 import { useNavigate } from 'react-router-dom';
 import { X,Plus } from 'lucide-react';
 
-function Bracketry() {
+function Bracketry({ tournamentId }) {
 
     const navigate = useNavigate();
     const bracketContainer = useRef(null);
@@ -20,9 +20,7 @@ function Bracketry() {
     const [localTeam, setLocalTeam] = useState('');
     const [guestTeam, setGuestTeam] = useState('')
     const [openForm, setOpenForm] = useState(false);
-    const [gamesScore, setGamesScore] = useState([ 
-    { roundIndex : 0, order : 0, localScore: "", guestScore: "" }
-  ]);
+    const [gamesScore, setGamesScore] = useState([]);
 
     // console.log(windowWidth);
 
@@ -63,6 +61,7 @@ function onMatchClickFunc(match) {
         // console.log(localTeamName,guestTeamName );
         if(localTeam == null || guestTeam == null) return;
         // console.log(bracketData[2][match.sides[0].contestantId]);
+        console.log("partido", match)
         setSelectedMatch(match);
         setOpenForm(true);
 
@@ -90,7 +89,11 @@ window.addEventListener('resize',()=>  {
   useEffect(() => {
 
     fetch('/api/tournamentData', {
-        method: 'GET',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tournamentId }),
         credentials: 'include'
     }).then(async res =>{
         if(res.status == 401) {
@@ -104,8 +107,12 @@ window.addEventListener('resize',()=>  {
             }
 
             const retryFetch = await fetch('/api/tournamentData', {
-                method: 'GET',
-                 credentials: 'include'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ tournamentId }),
+                credentials: 'include'
             });
 
             return retryFetch.json();
@@ -118,7 +125,7 @@ window.addEventListener('resize',()=>  {
 
         if(data.games.length == 0) return console.log("No data");
 
-       setTournamentData({games : data.games, teams: data.tournamentData, rounds_names: data.tournamentData[0].rounds_names});
+       setTournamentData({games : data.games, teams: data.tournamentData, rounds_names: data.tournamentData[0].rounds_names, tournament_name: data.tournamentData[0].tournament_name });
 
     }).catch(error => {
         console.log("Error", error.message);
@@ -219,8 +226,15 @@ window.addEventListener('resize',()=>  {
         return matches;
 }
 
-function convertRoundsNames(data) {   
-    const rounds = JSON.parse(data);
+function convertRoundsNames(data) {
+    if(!data) return [];
+    let rounds;
+    try {
+        rounds = JSON.parse(data);
+    } catch (error) {
+        console.log("Error parseando rounds_names", error.message);
+        return [];
+    }
     let roundsNames = [];
     rounds.map(round => {
         roundsNames.push({name:round});
@@ -234,14 +248,22 @@ function convertRoundsNames(data) {
   
     return (
          <div className='bracket-container'>
-            <h2>Copa Invierno 2026</h2>
+           { console.log("tournament data", tournamentData)}
+            <h2>{tournamentData.tournament_name ?? "Torneo"}</h2>
             {/* <button onClick={Confetti}>Confetti</button> */}
+            {!bracketContainer.current && (
+                <div className='empty-bracket-state'>
+                    <div className='empty-bracket-icon'>⏳</div>
+                    <p>Partidos todavía por definir</p>
+                    <span>Vuelve más tarde para ver el calendario completo.</span>
+                </div>
+            )}
             <div ref={bracketContainer} id='container'>
                
             </div>
             <div className='game-resullt-container'>
                 {selectedMatch && openForm && (
-                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket, gamesScore, setOpenForm, localTeam, guestTeam,tournamentId: 26,navigate, rounds: tournamentData.rounds_names})}>
+                    <form onSubmit={(e)=> useSetGameResult({e, match: selectedMatch, bracket, gamesScore, setOpenForm, localTeam, guestTeam,tournamentId,navigate, rounds: tournamentData.rounds_names})}>
                         <X className='close' onClick={()=> setOpenForm(false)} />
                         <p>Introduzca el resultado de la eliminatoria</p>
 

@@ -2,6 +2,10 @@ import React,{useState,useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../context/userContext';
 import "./login.css"
+import 
+{EyeOff, 
+  Eye} 
+  from 'lucide-react';
 
 function Login() {
 
@@ -12,6 +16,7 @@ const [birthdate, setBirthdate] = useState("");
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
 const [responseText, setResponseText] = useState(["", 'error'])
+const [showPassword, setShowPassword] = useState(false);
 const navigate = useNavigate();
 
   const { user, setUser } = useContext(AuthContext);
@@ -21,7 +26,7 @@ const navigate = useNavigate();
   async function handelSubmit (e) {
     e.preventDefault();
     console.log("submut");
-
+    
     if(submitAction === 'login') {
 
         fetch(`/api/login`, {
@@ -133,9 +138,13 @@ const navigate = useNavigate();
             </>
           )}
 
-          <input type="email" placeholder="Ingrese su correo electronico" id="email" value={email} onChange={(e)=> setEmail(e.target.value)} required/> 
-          <input type="password" minLength='6' placeholder="Ingrese su contraseña" id="password" value={password} onChange={(e)=> setPassword(e.target.value)}  required/>
-         
+          <input type="email" placeholder="Ingrese su correo electronico" id="email" value={email} onChange={(e)=> setEmail(e.target.value)} required/>
+          <div className="password-field">
+            <input type={`${showPassword ? 'text' : 'password'}`} minLength='6' placeholder="Ingrese su contraseña" id="password" value={password} onChange={(e)=> setPassword(e.target.value)}  required/>
+            <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+              {showPassword ? <EyeOff /> : <Eye />}
+            </button>
+          </div>
           <button type="submit" id="submitBtn">
             {submitAction == 'login' ? "Iniciar Sessión" : "Registrarse"}
           </button>

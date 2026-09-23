@@ -12,7 +12,22 @@ function ScoreForm({ localTeam, guestTeam, gamesScore,setGamesScore, match }) {
      const exist = gamesScore.filter(game => game.roundIndex == roundIndex && game.order == order);
 
       if(exist.length == 0) { //no objeto creado para este partido
-        setGamesScore([...gamesScore, {roundIndex, order, localScore: "", guestScore: "", tieWinner: "" }]) 
+        const localScores = match.sides?.[0]?.scores || [];
+        const guestScores = match.sides?.[1]?.scores || [];
+
+        if(localScores.length > 0 && localScores.length === guestScores.length) {
+          //el partido ya tiene resultado guardado, lo precargamos en los inputs
+          const existingGames = localScores.map((localScore, i) => ({
+            roundIndex,
+            order,
+            localScore: localScore.mainScore ?? "",
+            guestScore: guestScores[i]?.mainScore ?? "",
+            tieWinner: ""
+          }));
+          setGamesScore([...gamesScore, ...existingGames]);
+        } else {
+          setGamesScore([...gamesScore, {roundIndex, order, localScore: "", guestScore: "", tieWinner: "" }])
+        }
       }
 
   },[match])

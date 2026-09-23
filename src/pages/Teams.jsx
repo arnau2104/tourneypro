@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { refreshToken } from '../services/refreshToken'
 import { Search, Users,Flame,Pen ,Crown,UserRoundPlus,Plus,Minus} from 'lucide-react'
 import EditTeam from '../components/EditTeam'
+import CreateTeamForm from '../hooks/CreateTeamForm'
 import { useContext } from 'react'
 import { AuthContext } from '../context/userContext'
 
@@ -17,6 +18,8 @@ function Teams() {
   const [showInput, setShowInput] = useState(false)
   const [loading, setLoading] = useState(true)
   const [editTeam, setEditTeam] = useState(null)
+  const [openCreateForm, setOpenCreateForm] = useState(false)
+  const [joinResponse, setJoinResponse] = useState([null, ''])
   const { user } = useContext(AuthContext);
 
   const navigate = useNavigate()
@@ -24,6 +27,66 @@ function Teams() {
   function handleEditTeam(team) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     setEditTeam(team)
+  }
+
+  function handleTeamCreated(newTeam) {
+    setOpenCreateForm(false)
+
+    if (!newTeam) return
+
+    setTeams((prevTeams) => [...prevTeams, newTeam])
+    setUserTeams((prevTeams) => [...prevTeams, newTeam])
+  }
+
+  function handleJoinTeam(teamId) {
+    fetch('/api/joinTeam', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ teamId }),
+    })
+      .then(async (res) => {
+        if (res.status === 401) {
+          const refreshOk = await refreshToken()
+
+          if (!refreshOk) {
+            navigate('/login')
+            return
+          }
+
+          const retryFetch = await fetch('/api/joinTeam', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ teamId }),
+          })
+
+          return retryFetch.json()
+        }
+
+        return res.json()
+      })
+      .then((data) => {
+        console.log('Data:', data)
+
+        if (data.error) {
+          setJoinResponse([0, data.error])
+          setTimeout(() => setJoinResponse([null, '']), 2500)
+          return
+        }
+
+        setJoinResponse([1, data.message || 'Te has apuntado al equipo correctamente'])
+        setTimeout(() => setJoinResponse([null, '']), 2500)
+
+        getTeamsData()
+      })
+      .catch((error) => {
+        console.log('Error al unirse al equipo:', error.message)
+      })
   }
 
   function handleTeamSaved(updatedTeam) {
@@ -252,8 +315,8 @@ function Teams() {
           <h1>Equipos</h1>
           <p>Explora tus equipos creados y administra su identidad</p>
         </div>
-          <button className='icon-button' >
-                 <Plus className='icon plus' />  
+          <button className={`icon-button ${openCreateForm ? "open" : ""}`} onClick={() => setOpenCreateForm(!openCreateForm)}>
+                 <Plus className='icon plus' />
                  <Minus className='icon minus' />
           </button>
       </div>
@@ -277,6 +340,14 @@ function Teams() {
           )}
         </label>
       </div>
+
+      {joinResponse[1] && (
+        <p className={`response ${joinResponse[0] === 0 ? 'error' : 'correcto'} join-team-response`}>{joinResponse[1]}</p>
+      )}
+
+      {openCreateForm && (
+        <CreateTeamForm navigate={navigate} onCreated={handleTeamCreated} />
+      )}
 
       {editTeam && (
         <EditTeam
@@ -341,7 +412,7 @@ function Teams() {
                 )}
 
                 {!userTeams.some((t) => Number(t.team_id) === Number(team.team_id)) && (
-                  <button onClick={() => console.log('add user in the team')}><UserRoundPlus /></button>
+                  <button onClick={() => handleJoinTeam(team.team_id)}><UserRoundPlus /></button>
                 )}
               </div>
             </div>
