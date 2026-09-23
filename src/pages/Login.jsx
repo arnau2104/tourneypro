@@ -1,7 +1,7 @@
 import React,{useState,useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../context/userContext';
-import "./login.css"
+import "./Login.css"
 import 
 {EyeOff, 
   Eye} 
