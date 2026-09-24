@@ -8,11 +8,6 @@ import cors from 'cors';
 
 const port = process.env.PORT || 3000;
 
-app.use(cors({
-    origin: process.env.FRONTEND_URL, // ej: https://tourneypro-web.onrender.com
-    credentials: true // imprescindible para que el navegador mande/reciba cookies cross-origin
-}));
-
 
 const app = express();
 
@@ -20,6 +15,12 @@ app.disable('x-powered-by');
 
 app.use(express.json()); // importante para leer req.body
 app.use(cookieParser());
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL, // ej: https://tourneypro-web.onrender.com
+    credentials: true // imprescindible para que el navegador mande/reciba cookies cross-origin
+}));
+
 
 const authMiddleware = (req, res, next) => { //middleware para comprovar que hay acces token en las cookies, solo se aplica en rutas protegidas
   const token = req.cookies.access_token;
