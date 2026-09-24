@@ -95,13 +95,13 @@ export class Querys {
        res
         .cookie('access_token', tokens.accessToken, {
             httpOnly: true, // El token no es accesible desde JavaScript del lado del cliente, solo accesible desde el backend
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production', // false en desarrollo
             maxAge: 15 * 60 * 1000, //15 minutos
         })
         .cookie('refresh_token', tokens.refreshToken, {
             httpOnly: true, // El token no es accesible desde JavaScript del lado del cliente, solo accesible desde el backend
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production', // false en desarrollo
             maxAge: 7 * 24 * 60 * 60 * 1000, //7 dias
         })
@@ -156,14 +156,14 @@ export class Querys {
                 res
                     .cookie('access_token', tokens.accessToken, {
                       httpOnly: true, // El token no es accesible desde JavaScript del lado del cliente, solo accesible desde el backend
-                      sameSite: 'strict',
+                      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                     secure: process.env.NODE_ENV === 'production', // false en desarrollo
                       maxAge: 15 * 60 * 1000, //15 minutos
 
                     })
                     .cookie('refresh_token', tokens.refreshToken, {
                        httpOnly: true, // El token no es accesible desde JavaScript del lado del cliente, solo accesible desde el backend
-                       sameSite: 'strict',
+                       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                        secure: process.env.NODE_ENV === 'production', // false en desarrollo
                         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
 

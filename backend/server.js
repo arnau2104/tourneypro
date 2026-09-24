@@ -3,10 +3,15 @@ import { Querys } from './querys/querys.js';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 
 
 const port = process.env.PORT || 3000;
 
+app.use(cors({
+    origin: process.env.FRONTEND_URL, // ej: https://tourneypro-web.onrender.com
+    credentials: true // imprescindible para que el navegador mande/reciba cookies cross-origin
+}));
 
 
 const app = express();
