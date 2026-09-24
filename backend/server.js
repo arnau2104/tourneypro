@@ -12,6 +12,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // necesario detrás de proxies como Vercel/Render para que express-rate-limit lea bien la IP
 
 app.use(express.json()); // importante para leer req.body
 app.use(cookieParser());
