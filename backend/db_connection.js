@@ -1,17 +1,19 @@
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-// const config = {
-//     host: 'localhost',  // cambia localhost por esto
-//     port: 8889,          // añade el puerto de MAMP
-//     user: 'root',
-//     password: 'root',    // en MAMP la password por defecto es root
-//     database: 'tourneypro'
-// }
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-dotenv.config({ path: path.resolve(process.cwd(), 'backend/.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// En Vercel el sistema de archivos del despliegue no es fiable para leer
+// el certificado dinámicamente, así que se puede pasar por variable de entorno
+// (contenido completo del .pem). En local/Render se sigue leyendo el archivo.
+const caCert = process.env.DB_SSL_CA
+    ? process.env.DB_SSL_CA
+    : fs.readFileSync(path.resolve(__dirname, 'aiven-ca.pem'), 'utf8');
 
 const config = {
     host: process.env.DB_HOST,
@@ -20,7 +22,7 @@ const config = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     ssl: {
-        ca: fs.readFileSync(path.resolve(process.cwd(), 'backend/aiven-ca.pem'))
+        ca: caCert
     }
 }
 

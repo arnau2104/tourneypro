@@ -95,6 +95,12 @@ app.get('/api/getDashboardData', Querys.getDashboardData);
  app.post('/api/joinTeam', authMiddleware, Querys.joinTeam);
  app.get('/api/getMyInscriptions', authMiddleware, Querys.getMyInscriptions);
 
-app.listen(port, () => {
-  console.log(`Servidor escuchando en el puerto http://localhost:${port}`);
-});
+// En Vercel la app se invoca como función serverless (sin app.listen);
+// fuera de Vercel (local, Render, etc.) sí levantamos el servidor HTTP.
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Servidor escuchando en el puerto http://localhost:${port}`);
+  });
+}
+
+export default app;

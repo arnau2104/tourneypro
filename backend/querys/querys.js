@@ -1,7 +1,10 @@
 import { connection } from '../db_connection.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(process.cwd(), 'backend/.env') });import bcrypt from 'bcrypt';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { validateUserData, validatePartialUserData, validateTournamentData, validatePartialTournamentData,validateTeamData,validateUpdateTeamData } from '../schemas.js';
