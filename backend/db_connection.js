@@ -19,6 +19,7 @@ const config = {
     ssl: {
         rejectUnauthorized: false
     }
+
 }
 
 export const connection = mysql.createPool(config);
